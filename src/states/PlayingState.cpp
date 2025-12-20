@@ -1,0 +1,476 @@
+#include "states/PlayingState.hpp"
+#include "states/GameStateManager.hpp"
+#include "collision/handlers/BulletTerrainHandler.hpp"
+#include "collision/handlers/BulletTankHandler.hpp"
+#include "collision/handlers/TankTerrainHandler.hpp"
+#include "collision/handlers/TankTankHandler.hpp"
+#include "collision/handlers/BulletBulletHandler.hpp"
+#include "input/InputManager.hpp"
+#include "utils/DamageCalculator.hpp"
+#include <algorithm>
+
+namespace tank {
+
+// Convert ms to seconds for spawn interval
+constexpr float SPAWN_INTERVAL_SECONDS = Constants::ENEMY_SPAWN_INTERVAL / 1000.0f;
+
+PlayingState::PlayingState(GameStateManager& manager, int levelNumber, bool twoPlayer)
+    : stateManager_(manager)
+    , currentLevel_(levelNumber)
+    , twoPlayerMode_(twoPlayer)
+    , paused_(false)
+    , gameOver_(false)
+    , levelComplete_(false)
+    , enemySpawnTimer_(0.0f)
+    , enemiesSpawned_(0)
+    , enemiesAlive_(0)
+    , maxEnemiesOnScreen_(4)
+    , currentSpawnPoint_(0)
+    , player1Lives_(3)
+    , player2Lives_(3)
+    , hud_()
+    , gameOverOverlay_()
+    , pauseOverlay_()
+{
+    // Initialize HUD
+    hud_.setTwoPlayerMode(twoPlayerMode_);
+    hud_.setCurrentLevel(currentLevel_);
+}
+
+void PlayingState::enter() {
+    setupCollisionHandlers();
+    loadLevel();
+}
+
+void PlayingState::exit() {
+    enemies_.clear();
+    bullets_.clear();
+    terrains_.clear();
+    player1_.reset();
+    player2_.reset();
+    base_.reset();
+}
+
+void PlayingState::loadLevel() {
+    level_ = levelLoader_.loadLevel(currentLevel_);
+    if (!level_) {
+        // Create default level if load fails
+        level_ = std::make_unique<Level>(currentLevel_);
+    }
+
+    enemiesSpawned_ = 0;
+    enemiesAlive_ = 0;
+    levelComplete_ = false;
+
+    createTerrain();
+    createPlayers();
+
+    // Spawn initial enemies
+    for (int i = 0; i < maxEnemiesOnScreen_ && i < static_cast<int>(level_->getEnemySpawnList().size()); ++i) {
+        spawnEnemy();
+    }
+}
+
+void PlayingState::createTerrain() {
+    terrains_.clear();
+
+    const auto& terrainMap = level_->getTerrainMap();
+    int halfTile = Constants::CELL_SIZE / 2;
+
+    for (int y = 0; y < level_->getHeight(); ++y) {
+        for (int x = 0; x < level_->getWidth(); ++x) {
+            TerrainType type = terrainMap[y][x];
+            int posX = x * halfTile;
+            int posY = y * halfTile;
+
+            switch (type) {
+                case TerrainType::Brick:
+                    terrains_.push_back(std::make_unique<BrickWall>(Vector2(static_cast<float>(posX), static_cast<float>(posY))));
+                    break;
+                case TerrainType::Steel:
+                    terrains_.push_back(std::make_unique<SteelWall>(Vector2(static_cast<float>(posX), static_cast<float>(posY))));
+                    break;
+                case TerrainType::Water:
+                    terrains_.push_back(std::make_unique<Water>(Vector2(static_cast<float>(posX), static_cast<float>(posY))));
+                    break;
+                case TerrainType::Grass:
+                    terrains_.push_back(std::make_unique<Grass>(Vector2(static_cast<float>(posX), static_cast<float>(posY))));
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    // Create base
+    Vector2 basePos = level_->getBasePosition();
+    base_ = std::make_unique<Base>(static_cast<int>(basePos.x), static_cast<int>(basePos.y));
+}
+
+void PlayingState::createPlayers() {
+    Vector2 spawn1 = level_->getPlayer1Spawn();
+    player1_ = std::make_unique<PlayerTank>(1, spawn1);
+
+    if (twoPlayerMode_) {
+        Vector2 spawn2 = level_->getPlayer2Spawn();
+        player2_ = std::make_unique<PlayerTank>(2, spawn2);
+    }
+}
+
+void PlayingState::setupCollisionHandlers() {
+    collisionManager_.addHandler(std::make_unique<BulletBulletHandler>());
+    collisionManager_.addHandler(std::make_unique<BulletTerrainHandler>());
+    collisionManager_.addHandler(std::make_unique<BulletTankHandler>());
+    collisionManager_.addHandler(std::make_unique<TankTerrainHandler>());
+    collisionManager_.addHandler(std::make_unique<TankTankHandler>());
+}
+
+void PlayingState::update(float deltaTime) {
+    // Update game over animation even when game is over
+    if (gameOver_) {
+        gameOverOverlay_.update(deltaTime);
+        return;
+    }
+
+    if (paused_) return;
+
+    // Enemy spawn timer
+    enemySpawnTimer_ += deltaTime;
+    if (enemySpawnTimer_ >= SPAWN_INTERVAL_SECONDS) {
+        enemySpawnTimer_ = 0.0f;
+        if (enemiesAlive_ < maxEnemiesOnScreen_ &&
+            enemiesSpawned_ < static_cast<int>(level_->getEnemySpawnList().size())) {
+            spawnEnemy();
+        }
+    }
+
+    updateEntities(deltaTime);
+    checkCollisions();
+    removeDeadEntities();
+    checkGameState();
+}
+
+void PlayingState::updateEntities(float deltaTime) {
+    // Update players
+    if (player1_ && player1_->isAlive()) {
+        player1_->update(deltaTime);
+    }
+    if (player2_ && player2_->isAlive()) {
+        player2_->update(deltaTime);
+    }
+
+    // Update enemies
+    for (auto& enemy : enemies_) {
+        if (enemy->isAlive()) {
+            enemy->update(deltaTime);
+        }
+    }
+
+    // Update bullets
+    for (auto& bullet : bullets_) {
+        if (bullet->isAlive()) {
+            bullet->update(deltaTime);
+        }
+    }
+
+    // Update terrain (ITerrain interface provides update())
+    for (auto& terrain : terrains_) {
+        if (terrain->isActive()) {
+            terrain->update(deltaTime);
+        }
+    }
+
+    if (base_) {
+        base_->update(deltaTime);
+    }
+}
+
+void PlayingState::checkCollisions() {
+    // Bullets vs Base
+    if (base_ && base_->isAlive()) {
+        for (auto& bullet : bullets_) {
+            if (bullet->isAlive() && CollisionManager::checkAABB(bullet->getBounds(), base_->getBounds())) {
+                base_->takeDamage(bullet->getAttack(), bullet->getBounds());
+                bullet->hit();
+                bullet->die();
+            }
+        }
+    }
+
+    // Bullets vs Terrain (using ITerrain interface directly)
+    for (auto& bullet : bullets_) {
+        if (!bullet->isAlive()) continue;
+
+        for (auto& terrain : terrains_) {
+            if (terrain->isBulletPassable()) continue;
+            if (terrain->isDestroyed()) continue;
+
+            // ITerrain provides getBounds() directly
+            if (CollisionManager::checkAABB(bullet->getBounds(), terrain->getBounds())) {
+                terrain->takeDamage(bullet->getAttack(), bullet->getBounds());
+                bullet->hit();
+                bullet->die();
+                break;
+            }
+        }
+    }
+
+    // Bullets vs Tanks
+    std::vector<ITank*> allTanks;
+    if (player1_ && player1_->isAlive()) allTanks.push_back(player1_.get());
+    if (player2_ && player2_->isAlive()) allTanks.push_back(player2_.get());
+    for (auto& enemy : enemies_) {
+        if (enemy->isAlive()) allTanks.push_back(enemy.get());
+    }
+
+    for (auto& bullet : bullets_) {
+        if (!bullet->isAlive()) continue;
+
+        for (auto* tank : allTanks) {
+            if (!tank->isAlive()) continue;
+            if (bullet->getOwner() == tank) continue;
+
+            if (CollisionManager::checkAABB(bullet->getBounds(), tank->getBounds())) {
+                // Check friendly fire
+                bool bulletFromPlayer = dynamic_cast<PlayerTank*>(bullet->getOwner()) != nullptr;
+                bool targetIsPlayer = dynamic_cast<PlayerTank*>(tank) != nullptr;
+
+                if (bulletFromPlayer != targetIsPlayer) {
+                    // Check invincibility
+                    if (auto* player = dynamic_cast<PlayerTank*>(tank)) {
+                        if (player->isInvincible()) {
+                            bullet->die();
+                            continue;
+                        }
+                    }
+
+                    // Apply damage using DamageCalculator
+                    int damage = DamageCalculator::calculateDamage(
+                        bullet->getAttack(), tank->getDefense(), tank->getMaxHealth());
+                    tank->takeDamage(damage);
+                    bullet->die();
+                }
+            }
+        }
+    }
+
+    // Bullet vs Bullet
+    collisionManager_.checkCollisionsInternal(bullets_);
+}
+
+void PlayingState::removeDeadEntities() {
+    // Remove dead bullets
+    bullets_.erase(
+        std::remove_if(bullets_.begin(), bullets_.end(),
+            [](const std::unique_ptr<Bullet>& b) { return !b->isAlive(); }),
+        bullets_.end()
+    );
+
+    // Remove dead enemies
+    int deadEnemies = 0;
+    enemies_.erase(
+        std::remove_if(enemies_.begin(), enemies_.end(),
+            [&deadEnemies](const std::unique_ptr<EnemyTank>& e) {
+                if (!e->isAlive()) {
+                    ++deadEnemies;
+                    return true;
+                }
+                return false;
+            }),
+        enemies_.end()
+    );
+    enemiesAlive_ -= deadEnemies;
+
+    // Remove destroyed terrain
+    terrains_.erase(
+        std::remove_if(terrains_.begin(), terrains_.end(),
+            [](const std::unique_ptr<ITerrain>& t) { return t->isDestroyed(); }),
+        terrains_.end()
+    );
+}
+
+void PlayingState::checkGameState() {
+    // Check base destruction
+    if (base_ && !base_->isAlive()) {
+        gameOver_ = true;
+        gameOverOverlay_.start();
+        return;
+    }
+
+    // Check player deaths
+    bool player1Dead = !player1_ || (!player1_->isAlive() && player1Lives_ <= 0);
+    bool player2Dead = !twoPlayerMode_ || !player2_ || (!player2_->isAlive() && player2Lives_ <= 0);
+
+    if (player1Dead && player2Dead) {
+        gameOver_ = true;
+        gameOverOverlay_.start();
+        return;
+    }
+
+    // Handle player respawn
+    if (player1_ && !player1_->isAlive() && player1Lives_ > 0) {
+        --player1Lives_;
+        player1_->respawn();
+    }
+
+    if (twoPlayerMode_ && player2_ && !player2_->isAlive() && player2Lives_ > 0) {
+        --player2Lives_;
+        player2_->respawn();
+    }
+
+    // Check level complete
+    if (enemiesAlive_ == 0 && enemiesSpawned_ >= static_cast<int>(level_->getEnemySpawnList().size())) {
+        levelComplete_ = true;
+        // Transition to next level or victory screen
+    }
+}
+
+void PlayingState::handleInput(const InputManager& input) {
+    if (input.isKeyPressed(SDL_SCANCODE_ESCAPE)) {
+        paused_ = !paused_;
+        pauseOverlay_.setActive(paused_);
+    }
+
+    if (paused_) return;
+
+    handlePlayer1Input(input);
+    if (twoPlayerMode_) {
+        handlePlayer2Input(input);
+    }
+}
+
+void PlayingState::handlePlayer1Input(const InputManager& input) {
+    if (!player1_ || !player1_->isAlive()) return;
+
+    InputManager::PlayerInput p1Input = input.getPlayer1Input();
+    player1_->handleInput(p1Input);
+}
+
+void PlayingState::handlePlayer2Input(const InputManager& input) {
+    if (!player2_ || !player2_->isAlive()) return;
+
+    InputManager::PlayerInput p2Input = input.getPlayer2Input();
+    player2_->handleInput(p2Input);
+}
+
+void PlayingState::render(IRenderer& renderer) {
+    // Clear with black
+    renderer.clear(0, 0, 0, 255);
+
+    renderTerrain(renderer);
+    renderEntities(renderer);
+    renderUI(renderer);
+
+    if (paused_) {
+        pauseOverlay_.render(renderer);
+    }
+
+    if (gameOver_) {
+        gameOverOverlay_.render(renderer);
+    }
+}
+
+void PlayingState::renderTerrain(IRenderer& renderer) {
+    // Use ITerrain interface's getRenderLayer() instead of dynamic_cast
+    // Render water first (under everything)
+    for (const auto& terrain : terrains_) {
+        if (terrain->getRenderLayer() == RenderLayer::Water && terrain->isActive()) {
+            terrain->render(renderer);
+        }
+    }
+
+    // Render base
+    if (base_) {
+        base_->render(renderer);
+    }
+
+    // Render walls (non-water, non-grass terrain)
+    for (const auto& terrain : terrains_) {
+        RenderLayer layer = terrain->getRenderLayer();
+        if (layer != RenderLayer::Water && layer != RenderLayer::Grass && terrain->isActive()) {
+            terrain->render(renderer);
+        }
+    }
+}
+
+void PlayingState::renderEntities(IRenderer& renderer) {
+    // Render players
+    if (player1_ && player1_->isAlive()) {
+        player1_->render(renderer);
+    }
+    if (player2_ && player2_->isAlive()) {
+        player2_->render(renderer);
+    }
+
+    // Render enemies
+    for (const auto& enemy : enemies_) {
+        if (enemy->isAlive()) {
+            enemy->render(renderer);
+        }
+    }
+
+    // Render bullets
+    for (const auto& bullet : bullets_) {
+        if (bullet->isAlive()) {
+            bullet->render(renderer);
+        }
+    }
+
+    // Render grass last (on top of tanks) using ITerrain interface
+    for (const auto& terrain : terrains_) {
+        if (terrain->getRenderLayer() == RenderLayer::Grass && terrain->isActive()) {
+            terrain->render(renderer);
+        }
+    }
+}
+
+void PlayingState::renderUI(IRenderer& renderer) {
+    // Update HUD with current game state
+    int remainingEnemies = static_cast<int>(level_->getEnemySpawnList().size()) - enemiesSpawned_ + enemiesAlive_;
+    hud_.setRemainingEnemies(remainingEnemies);
+    hud_.setPlayer1Lives(player1Lives_);
+    hud_.setPlayer2Lives(player2Lives_);
+
+    // Render sidebar with remaining enemies, lives, etc.
+    hud_.render(renderer);
+}
+
+void PlayingState::addBullet(std::unique_ptr<Bullet> bullet) {
+    bullets_.push_back(std::move(bullet));
+}
+
+void PlayingState::spawnEnemy() {
+    const auto& spawnList = level_->getEnemySpawnList();
+    if (enemiesSpawned_ >= static_cast<int>(spawnList.size())) return;
+
+    const auto& spawnPoints = level_->getEnemySpawnPoints();
+    if (spawnPoints.empty()) return;
+
+    const EnemySpawnInfo& info = spawnList[enemiesSpawned_];
+    const Vector2& spawnPoint = spawnPoints[currentSpawnPoint_];
+
+    auto enemy = std::make_unique<EnemyTank>(spawnPoint, info.type);
+
+    // Set power-up carrying based on spawn info
+    if (info.hasPowerUp) {
+        enemy->setCarriesPowerUp(true);
+    }
+
+    enemies_.push_back(std::move(enemy));
+    ++enemiesSpawned_;
+    ++enemiesAlive_;
+
+    // Rotate spawn points
+    currentSpawnPoint_ = (currentSpawnPoint_ + 1) % spawnPoints.size();
+}
+
+void PlayingState::nextLevel() {
+    ++currentLevel_;
+    if (currentLevel_ > LevelLoader::getTotalLevels()) {
+        // Victory!
+        currentLevel_ = 1;  // Or go to victory state
+    }
+    loadLevel();
+}
+
+} // namespace tank
