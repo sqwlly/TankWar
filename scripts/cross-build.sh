@@ -111,6 +111,14 @@ package_release() {
     cp "$SDL2_MIXER_BIN/"*.dll "$PACKAGE_DIR/" 2>/dev/null || true
     cp "$SDL2_TTF_BIN/"*.dll "$PACKAGE_DIR/" 2>/dev/null || true
 
+    # Copy MinGW runtime DLLs
+    local MINGW_BIN="/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
+    if [ -d "$MINGW_BIN" ]; then
+        cp "$MINGW_BIN/libwinpthread-1.dll" "$PACKAGE_DIR/" 2>/dev/null || true
+        cp "$MINGW_BIN/libgcc_s_seh-1.dll" "$PACKAGE_DIR/" 2>/dev/null || true
+        cp "$MINGW_BIN/libstdc++-6.dll" "$PACKAGE_DIR/" 2>/dev/null || true
+    fi
+
     # List DLLs
     log_info "Copied DLLs:"
     ls -1 "$PACKAGE_DIR/"*.dll 2>/dev/null | xargs -n1 basename | sed 's/^/  - /'
