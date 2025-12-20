@@ -82,6 +82,8 @@ make -j$(nproc)
 
 参考 [BUILD_WINDOWS.md](BUILD_WINDOWS.md) 获取详细说明。
 
+**Linux 交叉编译**: 参考 [CROSS_COMPILE.md](CROSS_COMPILE.md) 在 Linux 上编译 Windows 版本。
+
 **快速开始 (MSYS2)**:
 ```bash
 pacman -S mingw-w64-ucrt-x86_64-{gcc,cmake,SDL2,SDL2_image,SDL2_mixer,SDL2_ttf}
