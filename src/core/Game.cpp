@@ -42,6 +42,11 @@ bool Game::initializeRenderer() {
         std::cerr << "Failed to initialize renderer" << std::endl;
         return false;
     }
+
+    // Load sprite sheet
+    renderer_->setSpriteSheet(Constants::Paths::SPRITE_SHEET);
+    std::cout << "Sprite sheet loaded: " << Constants::Paths::SPRITE_SHEET << std::endl;
+
     return true;
 }
 

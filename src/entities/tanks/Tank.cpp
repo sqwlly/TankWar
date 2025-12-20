@@ -1,4 +1,5 @@
 #include "entities/tanks/Tank.hpp"
+#include "graphics/SpriteSheet.hpp"
 #include <algorithm>
 
 namespace tank {
@@ -28,6 +29,13 @@ void Tank::update(float deltaTime) {
         return;
     }
 
+    // Update animation frame when moving
+    animationTimer_ += deltaTime;
+    if (animationTimer_ >= ANIMATION_SPEED) {
+        animationTimer_ = 0.0f;
+        animationFrame_ = (animationFrame_ + 1) % 2;
+    }
+
     onUpdate(deltaTime);
 }
 
@@ -36,16 +44,20 @@ void Tank::render(IRenderer& renderer) {
 
     // During spawning, render spawn effect
     if (spawning_) {
-        // Spawn animation placeholder
-        Rectangle bounds = getBounds();
-        renderer.drawRectangle(bounds, Constants::COLOR_WHITE, false);
+        int spawnFrame = static_cast<int>((Constants::SPAWN_ANIMATION_FRAMES -
+            spawnTimer_ / (Constants::SPAWN_ANIMATION_DELAY / 1000.0f))) % 4;
+        Rectangle srcRect = Sprites::Spawn::get(spawnFrame);
+        int x = static_cast<int>(position_.x);
+        int y = static_cast<int>(position_.y);
+        renderer.drawSprite(
+            static_cast<int>(srcRect.x), static_cast<int>(srcRect.y),
+            static_cast<int>(srcRect.width), static_cast<int>(srcRect.height),
+            x, y, static_cast<int>(width_), static_cast<int>(height_)
+        );
         return;
     }
 
-    // Render tank (placeholder - will be replaced with sprites)
-    Rectangle bounds = getBounds();
-    renderer.drawRectangle(bounds, Constants::COLOR_GREEN, true);
-
+    // Let subclass render the actual tank sprite
     onRender(renderer);
 }
 

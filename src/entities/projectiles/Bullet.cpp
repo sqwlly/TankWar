@@ -1,5 +1,6 @@
 #include "entities/projectiles/Bullet.hpp"
 #include "entities/tanks/ITank.hpp"
+#include "graphics/SpriteSheet.hpp"
 
 namespace tank {
 
@@ -47,9 +48,17 @@ void Bullet::onUpdate(float deltaTime) {
 void Bullet::onRender(IRenderer& renderer) {
     if (!isAlive()) return;
 
-    // Placeholder: draw bullet as small rectangle
-    Rectangle bounds = getBounds();
-    renderer.drawRectangle(bounds, Constants::COLOR_WHITE, true);
+    Rectangle bulletSrc = Sprites::Bullet::get(direction_);
+    int srcX = static_cast<int>(bulletSrc.x);
+    int srcY = static_cast<int>(bulletSrc.y);
+    int srcSize = Sprites::BULLET_SIZE;
+
+    int destX = static_cast<int>(position_.x);
+    int destY = static_cast<int>(position_.y);
+    int destW = static_cast<int>(width_);
+    int destH = static_cast<int>(height_);
+
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destW, destH);
 }
 
 void Bullet::die() {

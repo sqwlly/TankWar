@@ -1,4 +1,5 @@
 #include "entities/terrain/BrickWall.hpp"
+#include "graphics/SpriteSheet.hpp"
 #include <algorithm>
 
 namespace tank {
@@ -62,12 +63,18 @@ int BrickWall::getSpriteIndex() const {
 void BrickWall::onRender(IRenderer& renderer) {
     if (isDestroyed()) return;
 
-    // Placeholder: render remaining corners
-    Constants::Color brickColor{165, 42, 42};  // Brown
+    // Render each remaining corner using sprite
+    Rectangle brickSrc = Sprites::Terrain::getBrick(0);
+    int srcX = static_cast<int>(brickSrc.x);
+    int srcY = static_cast<int>(brickSrc.y);
+    int srcSize = Sprites::TERRAIN_SIZE;
+    int destSize = static_cast<int>(width_ / 2.0f);
 
     for (int i = 0; i < 4; ++i) {
         if (cornerStates_[i]) {
-            renderer.drawRectangle(corners_[i], brickColor, true);
+            int destX = static_cast<int>(corners_[i].x);
+            int destY = static_cast<int>(corners_[i].y);
+            renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destSize, destSize);
         }
     }
 }

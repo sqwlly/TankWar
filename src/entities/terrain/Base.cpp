@@ -1,5 +1,6 @@
 #include "entities/terrain/Base.hpp"
 #include "rendering/IRenderer.hpp"
+#include "graphics/SpriteSheet.hpp"
 #include "utils/Constants.hpp"
 
 namespace tank {
@@ -22,37 +23,16 @@ void Base::update(float deltaTime) {
 }
 
 void Base::render(IRenderer& renderer) {
-    int x = static_cast<int>(position_.x);
-    int y = static_cast<int>(position_.y);
-    int w = static_cast<int>(width_);
-    int h = static_cast<int>(height_);
+    Rectangle baseSrc = destroyed_ ? Sprites::Base::getDestroyed() : Sprites::Base::getNormal();
+    int srcX = static_cast<int>(baseSrc.x);
+    int srcY = static_cast<int>(baseSrc.y);
+    int srcSize = Sprites::Base::BASE_SIZE;
 
-    if (!destroyed_) {
-        // Draw eagle/base alive
-        // Base plate
-        renderer.drawRect(x, y, w, h, 128, 128, 128, 255);
+    int destX = static_cast<int>(position_.x);
+    int destY = static_cast<int>(position_.y);
+    int destSize = static_cast<int>(width_);
 
-        // Eagle body (triangle shape approximation)
-        int cx = x + w / 2;
-
-        // Eagle wings
-        renderer.drawRect(x + 2, y + h/3, w - 4, h/3, 255, 200, 0, 255);
-
-        // Eagle head
-        renderer.drawRect(cx - 4, y + 4, 8, 10, 255, 200, 0, 255);
-
-        // Eagle beak
-        renderer.drawRect(cx - 2, y + 2, 4, 4, 255, 100, 0, 255);
-    } else {
-        // Draw destroyed base (white flag / rubble)
-        renderer.drawRect(x, y, w, h, 64, 64, 64, 255);
-
-        // X mark for destroyed
-        renderer.drawRect(x + 4, y + 4, w - 8, 4, 200, 50, 50, 255);
-        renderer.drawRect(x + 4, y + h - 8, w - 8, 4, 200, 50, 50, 255);
-        renderer.drawRect(x + 4, y + 4, 4, h - 8, 200, 50, 50, 255);
-        renderer.drawRect(x + w - 8, y + 4, 4, h - 8, 200, 50, 50, 255);
-    }
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destSize, destSize);
 }
 
 void Base::takeDamage(int damage) {

@@ -1,5 +1,6 @@
 #include "entities/tanks/PlayerTank.hpp"
 #include "core/ServiceLocator.hpp"
+#include "graphics/SpriteSheet.hpp"
 
 namespace tank {
 
@@ -59,8 +60,39 @@ void PlayerTank::onRender(IRenderer& renderer) {
         return;
     }
 
-    // Base rendering is handled by Tank::render()
-    // Here we could add player-specific effects
+    // Calculate sprite position based on direction and animation frame
+    int dirCol = 0;
+    switch (direction_) {
+        case Direction::Up:    dirCol = 0; break;
+        case Direction::Left:  dirCol = 2; break;
+        case Direction::Down:  dirCol = 4; break;
+        case Direction::Right: dirCol = 6; break;
+    }
+
+    // Player 1: yellow (row 0), Player 2: green (row 8)
+    int baseRow = (playerId_ == 1) ? 0 : 8;
+    // Add level offset (each level adds 2 columns per direction set)
+    int levelOffset = level_ * 8;
+
+    int srcX = (dirCol + animationFrame_) * Sprites::TANK_SIZE + levelOffset;
+    int srcY = baseRow * Sprites::TANK_SIZE;
+
+    int destX = static_cast<int>(position_.x);
+    int destY = static_cast<int>(position_.y);
+    int destSize = static_cast<int>(width_);
+
+    renderer.drawSprite(srcX, srcY, Sprites::TANK_SIZE, Sprites::TANK_SIZE,
+                       destX, destY, destSize, destSize);
+
+    // Render shield effect if invincible
+    if (isInvincible()) {
+        Rectangle shieldRect = Sprites::Shield::get(animationFrame_);
+        renderer.drawSprite(
+            static_cast<int>(shieldRect.x), static_cast<int>(shieldRect.y),
+            static_cast<int>(shieldRect.width), static_cast<int>(shieldRect.height),
+            destX, destY, destSize, destSize
+        );
+    }
 }
 
 void PlayerTank::onShoot() {

@@ -1,5 +1,6 @@
 #include "entities/terrain/Water.hpp"
 #include "rendering/IRenderer.hpp"
+#include "graphics/SpriteSheet.hpp"
 
 namespace tank {
 
@@ -21,21 +22,21 @@ void Water::onUpdate(float deltaTime) {
 }
 
 void Water::onRender(IRenderer& renderer) {
-    int x = static_cast<int>(position_.x);
-    int y = static_cast<int>(position_.y);
-    int w = static_cast<int>(width_);
-    int h = static_cast<int>(height_);
+    Rectangle waterSrc = Sprites::Terrain::getWater(animationFrame_);
+    int srcX = static_cast<int>(waterSrc.x);
+    int srcY = static_cast<int>(waterSrc.y);
+    int srcSize = Sprites::TERRAIN_SIZE;
 
-    // Blue water color with animation variation
-    int shade = animationFrame_ == 0 ? 200 : 180;
-    renderer.drawRect(x, y, w, h, 0, 100, shade, 255);
+    int destX = static_cast<int>(position_.x);
+    int destY = static_cast<int>(position_.y);
+    int destSize = static_cast<int>(width_);
 
-    // Add wave pattern
-    if (animationFrame_ == 0) {
-        renderer.drawRect(x + 2, y + h/3, w - 4, 2, 100, 150, 255, 200);
-    } else {
-        renderer.drawRect(x + 2, y + 2*h/3, w - 4, 2, 100, 150, 255, 200);
-    }
+    // Water is rendered as 2x2 blocks
+    int halfDest = destSize / 2;
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, halfDest, halfDest);
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX + halfDest, destY, halfDest, halfDest);
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY + halfDest, halfDest, halfDest);
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX + halfDest, destY + halfDest, halfDest, halfDest);
 }
 
 } // namespace tank

@@ -1,4 +1,5 @@
 #include "entities/tanks/EnemyTank.hpp"
+#include "graphics/SpriteSheet.hpp"
 #include <random>
 
 namespace tank {
@@ -63,18 +64,35 @@ void EnemyTank::onUpdate(float deltaTime) {
 }
 
 void EnemyTank::onRender(IRenderer& renderer) {
-    // Enemy-specific rendering
-    // Color based on type
-    Constants::Color color = Constants::COLOR_GRAY;
-    switch (enemyType_) {
-        case EnemyType::Basic: color = {128, 128, 128}; break;
-        case EnemyType::Fast: color = {255, 128, 0}; break;
-        case EnemyType::Power: color = {128, 0, 255}; break;
-        case EnemyType::Heavy: color = {0, 128, 0}; break;
+    // Calculate sprite position based on direction and animation frame
+    int dirCol = 0;
+    switch (direction_) {
+        case Direction::Up:    dirCol = 0; break;
+        case Direction::Left:  dirCol = 2; break;
+        case Direction::Down:  dirCol = 4; break;
+        case Direction::Right: dirCol = 6; break;
     }
 
-    Rectangle bounds = getBounds();
-    renderer.drawRectangle(bounds, color, true);
+    // Enemy type determines row (4 rows after player tanks)
+    // Basic: row 4, Fast: row 5, Power: row 6, Heavy: row 7
+    int baseRow = 4 + static_cast<int>(enemyType_);
+
+    // Flashing effect if carrying power-up (use different color)
+    int colorOffset = 0;
+    if (carriesPowerUp_) {
+        // Alternate between normal and red color (flash)
+        colorOffset = (animationFrame_ % 2) ? 128 : 0;
+    }
+
+    int srcX = (dirCol + animationFrame_) * Sprites::TANK_SIZE + colorOffset;
+    int srcY = baseRow * Sprites::TANK_SIZE;
+
+    int destX = static_cast<int>(position_.x);
+    int destY = static_cast<int>(position_.y);
+    int destSize = static_cast<int>(width_);
+
+    renderer.drawSprite(srcX, srcY, Sprites::TANK_SIZE, Sprites::TANK_SIZE,
+                       destX, destY, destSize, destSize);
 }
 
 void EnemyTank::onDie() {

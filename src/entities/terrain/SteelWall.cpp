@@ -1,4 +1,5 @@
 #include "entities/terrain/SteelWall.hpp"
+#include "graphics/SpriteSheet.hpp"
 
 namespace tank {
 
@@ -20,9 +21,21 @@ void SteelWall::takeDamage(int damage, const Rectangle& hitBox) {
 void SteelWall::onRender(IRenderer& renderer) {
     if (destroyed_) return;
 
-    // Silver/gray color for steel
-    Constants::Color steelColor{192, 192, 192};
-    renderer.drawRectangle(getBounds(), steelColor, true);
+    Rectangle steelSrc = Sprites::Terrain::getSteel();
+    int srcX = static_cast<int>(steelSrc.x);
+    int srcY = static_cast<int>(steelSrc.y);
+    int srcSize = Sprites::TERRAIN_SIZE;
+
+    int destX = static_cast<int>(position_.x);
+    int destY = static_cast<int>(position_.y);
+    int destSize = static_cast<int>(width_);
+
+    // Steel wall is rendered as 2x2 blocks
+    int halfDest = destSize / 2;
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, halfDest, halfDest);
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX + halfDest, destY, halfDest, halfDest);
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY + halfDest, halfDest, halfDest);
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX + halfDest, destY + halfDest, halfDest, halfDest);
 }
 
 } // namespace tank

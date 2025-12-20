@@ -99,6 +99,11 @@ protected:
     int bulletCount_ = 1;
     int maxBullets_ = 1;
     int level_ = 0;
+
+    // Animation
+    int animationFrame_ = 0;
+    float animationTimer_ = 0.0f;
+    static constexpr float ANIMATION_SPEED = 0.1f;  // seconds per frame
 };
 
 } // namespace tank

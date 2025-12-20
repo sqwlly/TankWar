@@ -58,7 +58,7 @@ bool SDLRenderer::initialize(const std::string& title, int width, int height) {
     }
 
     // Set default font path
-    defaultFontPath_ = "assets/fonts/default.ttf";
+    defaultFontPath_ = "assets/joystix.ttf";
 
     std::cout << "SDL Renderer initialized successfully" << std::endl;
     return true;
