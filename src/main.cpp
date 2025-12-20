@@ -10,6 +10,7 @@
  */
 
 #include "core/Game.hpp"
+#include <SDL.h>  // Required for SDL_main handling on Windows
 #include <iostream>
 #include <exception>
 

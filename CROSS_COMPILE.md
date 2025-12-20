@@ -56,6 +56,9 @@ x86_64-w64-mingw32-g++ --version
 ```bash
 # 在项目根目录执行
 ./scripts/download-sdl2-win64.sh
+
+# 国内用户使用镜像加速 (推荐)
+./scripts/download-sdl2-win64.sh --mirror
 ```
 
 ### 手动下载
