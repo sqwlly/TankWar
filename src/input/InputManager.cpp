@@ -128,21 +128,23 @@ bool InputManager::isKeyPressed(SDL_Scancode scancode) const {
 
 InputManager::PlayerInput InputManager::getPlayer1Input() const {
     PlayerInput input;
-    input.up = isKeyDown(SDLK_w);
-    input.down = isKeyDown(SDLK_s);
-    input.left = isKeyDown(SDLK_a);
-    input.right = isKeyDown(SDLK_d);
-    input.fire = isKeyDown(SDLK_SPACE);
+    // Use scancodes directly for reliable input detection
+    input.up = isKeyDown(SDL_SCANCODE_W);
+    input.down = isKeyDown(SDL_SCANCODE_S);
+    input.left = isKeyDown(SDL_SCANCODE_A);
+    input.right = isKeyDown(SDL_SCANCODE_D);
+    input.fire = isKeyDown(SDL_SCANCODE_SPACE);
     return input;
 }
 
 InputManager::PlayerInput InputManager::getPlayer2Input() const {
     PlayerInput input;
-    input.up = isKeyDown(SDLK_UP);
-    input.down = isKeyDown(SDLK_DOWN);
-    input.left = isKeyDown(SDLK_LEFT);
-    input.right = isKeyDown(SDLK_RIGHT);
-    input.fire = isKeyDown(SDLK_KP_0) || isKeyDown(SDLK_RCTRL);
+    // Use scancodes directly for reliable input detection
+    input.up = isKeyDown(SDL_SCANCODE_UP);
+    input.down = isKeyDown(SDL_SCANCODE_DOWN);
+    input.left = isKeyDown(SDL_SCANCODE_LEFT);
+    input.right = isKeyDown(SDL_SCANCODE_RIGHT);
+    input.fire = isKeyDown(SDL_SCANCODE_KP_0) || isKeyDown(SDL_SCANCODE_RCTRL);
     return input;
 }
 
