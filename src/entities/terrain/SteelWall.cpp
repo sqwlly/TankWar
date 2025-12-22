@@ -1,5 +1,6 @@
 #include "entities/terrain/SteelWall.hpp"
 #include "graphics/SpriteSheet.hpp"
+#include <iostream>
 
 namespace tank {
 
@@ -30,6 +31,14 @@ void SteelWall::onRender(IRenderer& renderer) {
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
     int destSize = static_cast<int>(width_);
+
+    // Debug: print first steel's render params
+    static bool debugPrinted = false;
+    if (!debugPrinted) {
+        std::cout << "[SteelWall] Render: src=(" << srcX << "," << srcY << ") size=" << srcSize
+                  << " dest=(" << destX << "," << destY << ") size=" << destSize << std::endl;
+        debugPrinted = true;
+    }
 
     // Render scaled sprite directly
     renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destSize, destSize);
