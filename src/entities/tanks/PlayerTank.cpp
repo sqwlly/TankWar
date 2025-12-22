@@ -1,6 +1,7 @@
 #include "entities/tanks/PlayerTank.hpp"
 #include "core/ServiceLocator.hpp"
 #include "graphics/SpriteSheet.hpp"
+#include <iostream>
 
 namespace tank {
 
@@ -12,10 +13,24 @@ PlayerTank::PlayerTank(int playerId, const Vector2& spawnPosition)
     // Initial spawn with invincibility
     spawn(spawnPosition);
     makeInvincible(Constants::INVINCIBLE_DURATION / 1000.0f);
+    std::cout << "[PlayerTank] Created at (" << spawnPosition.x << ", " << spawnPosition.y
+              << "), spawning=" << spawning_ << ", spawnTimer=" << spawnTimer_ << std::endl;
 }
 
 void PlayerTank::handleInput(const InputManager::PlayerInput& input) {
-    if (spawning_) return;
+    if (spawning_) {
+        std::cout << "[PlayerTank] Still spawning, ignoring input" << std::endl;
+        return;
+    }
+
+    // Debug: print when any movement key is detected
+    bool anyMovement = input.up || input.down || input.left || input.right;
+    if (anyMovement) {
+        std::cout << "[PlayerTank] Movement input detected: "
+                  << "U=" << input.up << " D=" << input.down
+                  << " L=" << input.left << " R=" << input.right
+                  << " Pos before=(" << position_.x << "," << position_.y << ")" << std::endl;
+    }
 
     // Movement
     if (input.up) {
@@ -26,6 +41,10 @@ void PlayerTank::handleInput(const InputManager::PlayerInput& input) {
         move(Direction::Left);
     } else if (input.right) {
         move(Direction::Right);
+    }
+
+    if (anyMovement) {
+        std::cout << "[PlayerTank] Pos after=(" << position_.x << "," << position_.y << ")" << std::endl;
     }
 
     // Shooting

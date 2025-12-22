@@ -65,16 +65,17 @@ void EnemyTank::onUpdate(float deltaTime) {
 
 void EnemyTank::onRender(IRenderer& renderer) {
     // Calculate sprite position based on direction and animation frame
+    // Direction order matches Java: UP(0), RIGHT(2), DOWN(4), LEFT(6)
     int dirCol = 0;
     switch (direction_) {
-        case Direction::Up:    dirCol = Sprites::Tank::DIR_UP_COL; break;
-        case Direction::Down:  dirCol = Sprites::Tank::DIR_DOWN_COL; break;
-        case Direction::Left:  dirCol = Sprites::Tank::DIR_LEFT_COL; break;
-        case Direction::Right: dirCol = Sprites::Tank::DIR_RIGHT_COL; break;
+        case Direction::Up:    dirCol = Sprites::Tank::DIR_UP_COL; break;    // 0
+        case Direction::Right: dirCol = Sprites::Tank::DIR_RIGHT_COL; break; // 2
+        case Direction::Down:  dirCol = Sprites::Tank::DIR_DOWN_COL; break;  // 4
+        case Direction::Left:  dirCol = Sprites::Tank::DIR_LEFT_COL; break;  // 6
     }
 
-    // Enemy type determines base Y position
-    int baseY = Sprites::Tank::ENEMY_BASIC_Y;
+    // Enemy type determines the sprite set (0-2 for basic, fast, power; special for heavy)
+    int baseY = Sprites::Tank::ENEMY_BASIC_Y;  // Row 2 (y=68)
     int typeOffset = static_cast<int>(enemyType_);
 
     // Flashing effect if carrying power-up
@@ -85,6 +86,7 @@ void EnemyTank::onRender(IRenderer& renderer) {
     }
 
     // Calculate source coordinates
+    // Each enemy type has 8 columns (4 directions * 2 frames)
     int srcX = (typeOffset * 8 + dirCol + animationFrame_) * Sprites::ELEMENT_SIZE + xOffset;
     int srcY = baseY;
 

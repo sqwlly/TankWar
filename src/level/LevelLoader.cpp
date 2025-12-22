@@ -91,12 +91,14 @@ void LevelLoader::parseMapGrid(std::ifstream& file, Level& level) {
 }
 
 TerrainType LevelLoader::valueToTerrainType(int value) {
+    // Map file values to TerrainType (matching Constants.hpp)
+    // File: 0=Empty, 1=Steel, 2=Brick, 3=Water, 4=Grass
     switch (value) {
         case 0: return TerrainType::Empty;
         case 1: return TerrainType::Steel;
         case 2: return TerrainType::Brick;
-        case 3: return TerrainType::Grass;
-        case 5: return TerrainType::Water;
+        case 3: return TerrainType::Water;
+        case 4: return TerrainType::Grass;
         default: return TerrainType::Empty;
     }
 }
@@ -106,8 +108,8 @@ int LevelLoader::terrainTypeToValue(TerrainType type) {
         case TerrainType::Empty: return 0;
         case TerrainType::Steel: return 1;
         case TerrainType::Brick: return 2;
-        case TerrainType::Grass: return 3;
-        case TerrainType::Water: return 5;
+        case TerrainType::Water: return 3;
+        case TerrainType::Grass: return 4;
         case TerrainType::Base:  return 0;  // Base is special, not in grid
         default: return 0;
     }

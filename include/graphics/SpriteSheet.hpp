@@ -34,15 +34,18 @@ namespace Tank {
     constexpr int P1_BASE_Y = 0;
     constexpr int P2_BASE_Y = 8 * ELEMENT_SIZE;  // 272
 
-    constexpr int ENEMY_BASIC_Y = 8 * ELEMENT_SIZE;   // Row 8 - enemy tanks
-    constexpr int ENEMY_FAST_Y = 8 * ELEMENT_SIZE;
-    constexpr int ENEMY_POWER_Y = 8 * ELEMENT_SIZE;
-    constexpr int ENEMY_ARMOR_Y = 8 * ELEMENT_SIZE;
+    // Enemy tanks at row 2 (y=68) - from Java Enemy.java
+    constexpr int ENEMY_BASIC_Y = 2 * ELEMENT_SIZE;   // Row 2 - enemy tanks
+    constexpr int ENEMY_FAST_Y = 2 * ELEMENT_SIZE;
+    constexpr int ENEMY_POWER_Y = 2 * ELEMENT_SIZE;
+    constexpr int ENEMY_ARMOR_Y = 2 * ELEMENT_SIZE;
 
+    // Direction column offsets (each direction has 2 animation frames)
+    // Java Direction order: UP, RIGHT, DOWN, LEFT
     constexpr int DIR_UP_COL = 0;
-    constexpr int DIR_DOWN_COL = 2;
-    constexpr int DIR_LEFT_COL = 4;
-    constexpr int DIR_RIGHT_COL = 6;
+    constexpr int DIR_RIGHT_COL = 2;
+    constexpr int DIR_DOWN_COL = 4;
+    constexpr int DIR_LEFT_COL = 6;
 
     constexpr int FLASH_OFFSET_X = 16 * ELEMENT_SIZE;  // 544
 

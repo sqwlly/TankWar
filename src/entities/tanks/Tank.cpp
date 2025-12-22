@@ -1,6 +1,7 @@
 #include "entities/tanks/Tank.hpp"
 #include "graphics/SpriteSheet.hpp"
 #include <algorithm>
+#include <iostream>
 
 namespace tank {
 
@@ -25,6 +26,7 @@ void Tank::update(float deltaTime) {
         spawnTimer_ -= deltaTime;
         if (spawnTimer_ <= 0) {
             spawning_ = false;
+            std::cout << "[Tank] Spawn animation complete, now controllable" << std::endl;
         }
         return;
     }

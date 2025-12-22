@@ -69,29 +69,20 @@ int BrickWall::getSpriteIndex() const {
 void BrickWall::onRender(IRenderer& renderer) {
     if (isDestroyed()) return;
 
-    // Render each remaining corner using sprite
-    // Brick sprite is 34x34, we render as 4 quarters
-    Rectangle brickSrc = Sprites::Terrain::getBrick(0);
-    int srcX = static_cast<int>(brickSrc.x);
-    int srcY = static_cast<int>(brickSrc.y);
-    int srcSize = static_cast<int>(brickSrc.width);
-    int halfSrc = srcSize / 2;
+    // Get sprite based on current state (like Java Tile.java)
+    // The sprite sheet has 15 different brick states at row 5, starting col 4
+    int spriteIndex = getSpriteIndex();
 
-    // Each corner maps to a quarter of the 34x34 brick sprite
-    // Use the actual corner bounds for destination
-    for (int i = 0; i < 4; ++i) {
-        if (cornerStates_[i]) {
-            int destX = static_cast<int>(corners_[i].x);
-            int destY = static_cast<int>(corners_[i].y);
-            int destW = static_cast<int>(corners_[i].width);
-            int destH = static_cast<int>(corners_[i].height);
-            // Calculate source quarter based on corner index
-            int srcOffsetX = (i % 2) * halfSrc;
-            int srcOffsetY = (i / 2) * halfSrc;
-            renderer.drawSprite(srcX + srcOffsetX, srcY + srcOffsetY, halfSrc, halfSrc,
-                              destX, destY, destW, destH);
-        }
-    }
+    // Source sprite: each brick state is 34x34, arranged horizontally
+    int srcX = Sprites::Terrain::BRICK_X + spriteIndex * Sprites::ELEMENT_SIZE;
+    int srcY = Sprites::Terrain::BRICK_Y;
+
+    int destX = static_cast<int>(position_.x);
+    int destY = static_cast<int>(position_.y);
+
+    // Render the full brick sprite scaled to CELL_SIZE (17x17)
+    renderer.drawSprite(srcX, srcY, Sprites::ELEMENT_SIZE, Sprites::ELEMENT_SIZE,
+                       destX, destY, static_cast<int>(width_), static_cast<int>(height_));
 }
 
 } // namespace tank
