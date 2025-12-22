@@ -1,0 +1,58 @@
+name: Build Windows (Static)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # 允许手动触发
+
+env:
+  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Export GitHub Actions cache variables
+      uses: actions/github-script@v7
+      with:
+        script: |
+          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+    - name: Setup vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgGitCommitId: 'c82f74667287d3dc386bce81e44964370c91a289'
+
+    - name: Install dependencies (static)
+      run: |
+        vcpkg install sdl2:x64-windows-static sdl2-image:x64-windows-static sdl2-mixer:x64-windows-static sdl2-ttf:x64-windows-static
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -S . `
+          -DCMAKE_BUILD_TYPE=Release `
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+          -DVCPKG_TARGET_TRIPLET=x64-windows-static `
+          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Prepare release package
+      run: |
+        mkdir release
+        cp build/Release/TankGame.exe release/
+        cp -r assets release/
+      shell: bash
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TankGame-Windows-x64
+        path: release/

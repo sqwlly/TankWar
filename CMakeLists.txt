@@ -16,8 +16,8 @@ include(cmake/CompilerSettings.cmake)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # Find SDL2 and related libraries
-if(CMAKE_CROSSCOMPILING AND WIN32)
-    # Cross-compiling: SDL2 paths are set in toolchain file
+if(CMAKE_CROSSCOMPILING AND WIN32 AND NOT VCPKG_TOOLCHAIN)
+    # Cross-compiling with MinGW: SDL2 paths are set in toolchain file
     # Create imported targets manually
     if(NOT TARGET SDL2::SDL2)
         add_library(SDL2::SDL2 INTERFACE IMPORTED)
@@ -55,11 +55,11 @@ if(CMAKE_CROSSCOMPILING AND WIN32)
         )
     endif()
 else()
-    # Native build: use find_package
-    find_package(SDL2 REQUIRED)
-    find_package(SDL2_image REQUIRED)
-    find_package(SDL2_mixer REQUIRED)
-    find_package(SDL2_ttf REQUIRED)
+    # Native build or vcpkg: use find_package
+    find_package(SDL2 REQUIRED CONFIG)
+    find_package(SDL2_image REQUIRED CONFIG)
+    find_package(SDL2_mixer REQUIRED CONFIG)
+    find_package(SDL2_ttf REQUIRED CONFIG)
 endif()
 
 # Collect source files
@@ -79,8 +79,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 # Link libraries
-if(CMAKE_CROSSCOMPILING AND WIN32)
-    # Windows cross-compile: need specific link order for SDL2
+if(CMAKE_CROSSCOMPILING AND WIN32 AND NOT VCPKG_TOOLCHAIN)
+    # Windows cross-compile with MinGW: need specific link order for SDL2
     # Order: mingw32 -> SDL2main -> SDL2 -> extensions
     target_link_libraries(${PROJECT_NAME} PRIVATE
         -lmingw32
@@ -90,12 +90,13 @@ if(CMAKE_CROSSCOMPILING AND WIN32)
         ${SDL2_TTF_LIBRARIES}
     )
 else()
+    # Native build or vcpkg: use imported targets
     target_link_libraries(${PROJECT_NAME} PRIVATE
-        SDL2::SDL2
-        SDL2::SDL2main
-        SDL2_image::SDL2_image
-        SDL2_mixer::SDL2_mixer
-        SDL2_ttf::SDL2_ttf
+        $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+        $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+        $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>
+        $<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer>,SDL2_mixer::SDL2_mixer,SDL2_mixer::SDL2_mixer-static>
+        $<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf>,SDL2_ttf::SDL2_ttf,SDL2_ttf::SDL2_ttf-static>
     )
 endif()
 
