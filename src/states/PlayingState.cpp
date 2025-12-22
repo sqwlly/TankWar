@@ -7,6 +7,7 @@
 #include "collision/handlers/BulletBulletHandler.hpp"
 #include "input/InputManager.hpp"
 #include "utils/DamageCalculator.hpp"
+#include "ai/AIBehavior.hpp"
 #include <algorithm>
 
 namespace tank {
@@ -454,10 +455,16 @@ void PlayingState::spawnEnemy() {
 
     auto enemy = std::make_unique<EnemyTank>(spawnPoint, info.type);
 
+    // Set AI behavior for enemy tank
+    enemy->setAIBehavior(std::make_unique<SimpleAI>());
+
     // Set power-up carrying based on spawn info
     if (info.hasPowerUp) {
         enemy->setCarriesPowerUp(true);
     }
+
+    // Initialize spawn animation
+    enemy->spawn(spawnPoint);
 
     enemies_.push_back(std::move(enemy));
     ++enemiesSpawned_;
