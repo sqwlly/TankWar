@@ -22,21 +22,18 @@ void Water::onUpdate(float deltaTime) {
 }
 
 void Water::onRender(IRenderer& renderer) {
+    // Water sprite is 34x34, scale to destination size (17x17)
     Rectangle waterSrc = Sprites::Terrain::getWater(animationFrame_);
     int srcX = static_cast<int>(waterSrc.x);
     int srcY = static_cast<int>(waterSrc.y);
-    int srcSize = Sprites::TERRAIN_SIZE;
+    int srcSize = static_cast<int>(waterSrc.width);
 
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
     int destSize = static_cast<int>(width_);
 
-    // Water is rendered as 2x2 blocks
-    int halfDest = destSize / 2;
-    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, halfDest, halfDest);
-    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX + halfDest, destY, halfDest, halfDest);
-    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY + halfDest, halfDest, halfDest);
-    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX + halfDest, destY + halfDest, halfDest, halfDest);
+    // Render scaled sprite directly
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destSize, destSize);
 }
 
 } // namespace tank

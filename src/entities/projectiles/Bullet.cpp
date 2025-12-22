@@ -5,7 +5,7 @@
 namespace tank {
 
 Bullet::Bullet(const Vector2& position, Direction direction, ITank* owner, int level)
-    : Entity(position, 9, 10)
+    : Entity(position, Sprites::BULLET_SIZE, Sprites::BULLET_SIZE)
     , owner_(owner)
     , direction_(direction)
     , level_(level)
@@ -48,17 +48,19 @@ void Bullet::onUpdate(float deltaTime) {
 void Bullet::onRender(IRenderer& renderer) {
     if (!isAlive()) return;
 
+    // Use the new SpriteSheet API with correct coordinates
     Rectangle bulletSrc = Sprites::Bullet::get(direction_);
-    int srcX = static_cast<int>(bulletSrc.x);
-    int srcY = static_cast<int>(bulletSrc.y);
-    int srcSize = Sprites::BULLET_SIZE;
 
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
     int destW = static_cast<int>(width_);
     int destH = static_cast<int>(height_);
 
-    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destW, destH);
+    renderer.drawSprite(
+        static_cast<int>(bulletSrc.x), static_cast<int>(bulletSrc.y),
+        static_cast<int>(bulletSrc.width), static_cast<int>(bulletSrc.height),
+        destX, destY, destW, destH
+    );
 }
 
 void Bullet::die() {

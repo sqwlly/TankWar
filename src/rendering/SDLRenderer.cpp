@@ -67,6 +67,12 @@ bool SDLRenderer::initialize(const std::string& title, int width, int height) {
 void SDLRenderer::shutdown() {
     clearFontCache();
 
+    // Destroy sprite sheet texture
+    if (spriteSheet_) {
+        SDL_DestroyTexture(spriteSheet_);
+        spriteSheet_ = nullptr;
+    }
+
     if (renderer_) {
         SDL_DestroyRenderer(renderer_);
         renderer_ = nullptr;

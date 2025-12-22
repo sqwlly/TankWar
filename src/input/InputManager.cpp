@@ -128,21 +128,21 @@ bool InputManager::isKeyPressed(SDL_Scancode scancode) const {
 
 InputManager::PlayerInput InputManager::getPlayer1Input() const {
     PlayerInput input;
-    input.up = isKeyDown(SDLK_w) || isKeyDown(SDLK_UP);
-    input.down = isKeyDown(SDLK_s) || isKeyDown(SDLK_DOWN);
-    input.left = isKeyDown(SDLK_a) || isKeyDown(SDLK_LEFT);
-    input.right = isKeyDown(SDLK_d) || isKeyDown(SDLK_RIGHT);
-    input.fire = isKeyDown(SDLK_SPACE) || isKeyDown(SDLK_j);
+    input.up = isKeyDown(SDLK_w);
+    input.down = isKeyDown(SDLK_s);
+    input.left = isKeyDown(SDLK_a);
+    input.right = isKeyDown(SDLK_d);
+    input.fire = isKeyDown(SDLK_SPACE);
     return input;
 }
 
 InputManager::PlayerInput InputManager::getPlayer2Input() const {
     PlayerInput input;
-    input.up = isKeyDown(SDLK_i);
-    input.down = isKeyDown(SDLK_k);
-    input.left = isKeyDown(SDLK_j);
-    input.right = isKeyDown(SDLK_l);
-    input.fire = isKeyDown(SDLK_u);
+    input.up = isKeyDown(SDLK_UP);
+    input.down = isKeyDown(SDLK_DOWN);
+    input.left = isKeyDown(SDLK_LEFT);
+    input.right = isKeyDown(SDLK_RIGHT);
+    input.fire = isKeyDown(SDLK_KP_0) || isKeyDown(SDLK_RCTRL);
     return input;
 }
 

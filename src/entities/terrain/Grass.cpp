@@ -15,21 +15,18 @@ Grass::Grass(const Vector2& position)
 }
 
 void Grass::onRender(IRenderer& renderer) {
+    // Grass sprite is 17x17 (HALF_SIZE), scale to destination size (17x17)
     Rectangle grassSrc = Sprites::Terrain::getGrass();
     int srcX = static_cast<int>(grassSrc.x);
     int srcY = static_cast<int>(grassSrc.y);
-    int srcSize = Sprites::TERRAIN_SIZE;
+    int srcSize = static_cast<int>(grassSrc.width);
 
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
     int destSize = static_cast<int>(width_);
 
-    // Grass is rendered as 2x2 blocks
-    int halfDest = destSize / 2;
-    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, halfDest, halfDest);
-    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX + halfDest, destY, halfDest, halfDest);
-    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY + halfDest, halfDest, halfDest);
-    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX + halfDest, destY + halfDest, halfDest, halfDest);
+    // Render scaled sprite directly (17x17 -> 17x17, 1:1 mapping)
+    renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destSize, destSize);
 }
 
 } // namespace tank

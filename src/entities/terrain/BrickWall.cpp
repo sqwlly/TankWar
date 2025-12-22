@@ -1,6 +1,7 @@
 #include "entities/terrain/BrickWall.hpp"
 #include "graphics/SpriteSheet.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace tank {
 
@@ -16,13 +17,18 @@ BrickWall::BrickWall(const Vector2& position)
 }
 
 void BrickWall::initializeCorners() {
-    float halfW = width_ / 2.0f;
-    float halfH = height_ / 2.0f;
+    // For 17x17 brick, split into 4 corners with proper coverage
+    // Left corners: width = ceil(17/2) = 9, Right corners: width = floor(17/2) = 8
+    // Top corners: height = ceil(17/2) = 9, Bottom corners: height = floor(17/2) = 8
+    float leftW = std::ceil(width_ / 2.0f);
+    float rightW = std::floor(width_ / 2.0f);
+    float topH = std::ceil(height_ / 2.0f);
+    float bottomH = std::floor(height_ / 2.0f);
 
-    corners_[0] = Rectangle(position_.x, position_.y, halfW, halfH);              // Top-Left
-    corners_[1] = Rectangle(position_.x + halfW, position_.y, halfW, halfH);      // Top-Right
-    corners_[2] = Rectangle(position_.x, position_.y + halfH, halfW, halfH);      // Bottom-Left
-    corners_[3] = Rectangle(position_.x + halfW, position_.y + halfH, halfW, halfH); // Bottom-Right
+    corners_[0] = Rectangle(position_.x, position_.y, leftW, topH);                  // Top-Left
+    corners_[1] = Rectangle(position_.x + leftW, position_.y, rightW, topH);         // Top-Right
+    corners_[2] = Rectangle(position_.x, position_.y + topH, leftW, bottomH);        // Bottom-Left
+    corners_[3] = Rectangle(position_.x + leftW, position_.y + topH, rightW, bottomH); // Bottom-Right
 }
 
 void BrickWall::takeDamage(int damage, const Rectangle& hitBox) {
@@ -64,17 +70,26 @@ void BrickWall::onRender(IRenderer& renderer) {
     if (isDestroyed()) return;
 
     // Render each remaining corner using sprite
+    // Brick sprite is 34x34, we render as 4 quarters
     Rectangle brickSrc = Sprites::Terrain::getBrick(0);
     int srcX = static_cast<int>(brickSrc.x);
     int srcY = static_cast<int>(brickSrc.y);
-    int srcSize = Sprites::TERRAIN_SIZE;
-    int destSize = static_cast<int>(width_ / 2.0f);
+    int srcSize = static_cast<int>(brickSrc.width);
+    int halfSrc = srcSize / 2;
 
+    // Each corner maps to a quarter of the 34x34 brick sprite
+    // Use the actual corner bounds for destination
     for (int i = 0; i < 4; ++i) {
         if (cornerStates_[i]) {
             int destX = static_cast<int>(corners_[i].x);
             int destY = static_cast<int>(corners_[i].y);
-            renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destSize, destSize);
+            int destW = static_cast<int>(corners_[i].width);
+            int destH = static_cast<int>(corners_[i].height);
+            // Calculate source quarter based on corner index
+            int srcOffsetX = (i % 2) * halfSrc;
+            int srcOffsetY = (i / 2) * halfSrc;
+            renderer.drawSprite(srcX + srcOffsetX, srcY + srcOffsetY, halfSrc, halfSrc,
+                              destX, destY, destW, destH);
         }
     }
 }
