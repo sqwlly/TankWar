@@ -1,6 +1,5 @@
 #include "entities/terrain/SteelWall.hpp"
 #include "graphics/SpriteSheet.hpp"
-#include <iostream>
 
 namespace tank {
 
@@ -22,7 +21,7 @@ void SteelWall::takeDamage(int damage, const Rectangle& hitBox) {
 void SteelWall::onRender(IRenderer& renderer) {
     if (destroyed_) return;
 
-    // Steel sprite is 34x34, scale to destination size (17x17)
+    // Steel sprite is 34x34
     Rectangle steelSrc = Sprites::Terrain::getSteel();
     int srcX = static_cast<int>(steelSrc.x);
     int srcY = static_cast<int>(steelSrc.y);
@@ -30,17 +29,10 @@ void SteelWall::onRender(IRenderer& renderer) {
 
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
-    int destSize = static_cast<int>(width_);
 
-    // Debug: print first steel's render params
-    static bool debugPrinted = false;
-    if (!debugPrinted) {
-        std::cout << "[SteelWall] Render: src=(" << srcX << "," << srcY << ") size=" << srcSize
-                  << " dest=(" << destX << "," << destY << ") size=" << destSize << std::endl;
-        debugPrinted = true;
-    }
+    // Java renders at ELEMENT_SIZE + 1 = 35, we use ELEMENT_SIZE = 34
+    int destSize = Sprites::ELEMENT_SIZE;
 
-    // Render scaled sprite directly
     renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destSize, destSize);
 }
 

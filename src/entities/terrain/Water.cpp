@@ -22,7 +22,7 @@ void Water::onUpdate(float deltaTime) {
 }
 
 void Water::onRender(IRenderer& renderer) {
-    // Water sprite is 34x34, scale to destination size (17x17)
+    // Water sprite is 34x34, render at full size like Java
     Rectangle waterSrc = Sprites::Terrain::getWater(animationFrame_);
     int srcX = static_cast<int>(waterSrc.x);
     int srcY = static_cast<int>(waterSrc.y);
@@ -30,9 +30,10 @@ void Water::onRender(IRenderer& renderer) {
 
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
-    int destSize = static_cast<int>(width_);
 
-    // Render scaled sprite directly
+    // Java renders terrain at ELEMENT_SIZE, we do the same
+    int destSize = Sprites::ELEMENT_SIZE;
+
     renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destSize, destSize);
 }
 

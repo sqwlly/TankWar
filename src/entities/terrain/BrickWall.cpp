@@ -2,7 +2,6 @@
 #include "graphics/SpriteSheet.hpp"
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 
 namespace tank {
 
@@ -81,18 +80,11 @@ void BrickWall::onRender(IRenderer& renderer) {
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
 
-    // Debug: print first brick's render params
-    static bool debugPrinted = false;
-    if (!debugPrinted && destX == 0) {
-        std::cout << "[BrickWall] Render: src=(" << srcX << "," << srcY << ") size=34x34"
-                  << " dest=(" << destX << "," << destY << ") size=" << width_ << "x" << height_
-                  << " spriteIndex=" << spriteIndex << std::endl;
-        debugPrinted = true;
-    }
+    // Java renders at ELEMENT_SIZE + 1 = 35, we use ELEMENT_SIZE = 34 for cleaner scaling
+    int destSize = Sprites::ELEMENT_SIZE;
 
-    // Render the full brick sprite scaled to CELL_SIZE (17x17)
     renderer.drawSprite(srcX, srcY, Sprites::ELEMENT_SIZE, Sprites::ELEMENT_SIZE,
-                       destX, destY, static_cast<int>(width_), static_cast<int>(height_));
+                       destX, destY, destSize, destSize);
 }
 
 } // namespace tank
