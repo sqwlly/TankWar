@@ -31,8 +31,8 @@ void Water::onRender(IRenderer& renderer) {
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
 
-    // Java renders terrain at ELEMENT_SIZE, we do the same
-    int destSize = Sprites::ELEMENT_SIZE;
+    // Java renders at ELEMENT_SIZE + 1 = 35 to avoid gaps
+    int destSize = Sprites::ELEMENT_SIZE + 1;
 
     renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destSize, destSize);
 }

@@ -77,6 +77,10 @@ void InputManager::processEvents() {
         }
     }
 
+    // SDL_PumpEvents is called by SDL_PollEvent, but call it explicitly to ensure
+    // keyboard state is updated before SDL_GetKeyboardState
+    SDL_PumpEvents();
+
     // Use SDL_GetKeyboardState for reliable real-time key detection
     const Uint8* keyState = SDL_GetKeyboardState(nullptr);
     for (int i = 0; i < SDL_NUM_SCANCODES; ++i) {
