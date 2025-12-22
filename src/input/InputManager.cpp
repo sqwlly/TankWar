@@ -41,14 +41,12 @@ void InputManager::processEvents() {
 
             case SDL_KEYDOWN:
                 if (!event.key.repeat) {
-                    currentKeys_[event.key.keysym.scancode] = true;
                     inputEvent.type = InputEvent::Type::KeyDown;
                     inputEvent.keycode = event.key.keysym.sym;
                 }
                 break;
 
             case SDL_KEYUP:
-                currentKeys_[event.key.keysym.scancode] = false;
                 inputEvent.type = InputEvent::Type::KeyUp;
                 inputEvent.keycode = event.key.keysym.sym;
                 break;
@@ -77,6 +75,12 @@ void InputManager::processEvents() {
         if (inputEvent.type != InputEvent::Type::None && eventCallback_) {
             eventCallback_(inputEvent);
         }
+    }
+
+    // Use SDL_GetKeyboardState for reliable real-time key detection
+    const Uint8* keyState = SDL_GetKeyboardState(nullptr);
+    for (int i = 0; i < SDL_NUM_SCANCODES; ++i) {
+        currentKeys_[i] = keyState[i] != 0;
     }
 }
 
