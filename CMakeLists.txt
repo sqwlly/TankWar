@@ -72,16 +72,18 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
-    ${SDL2_INCLUDE_DIRS}
-    ${SDL2_IMAGE_INCLUDE_DIRS}
-    ${SDL2_MIXER_INCLUDE_DIRS}
-    ${SDL2_TTF_INCLUDE_DIRS}
 )
 
 # Link libraries
 if(CMAKE_CROSSCOMPILING AND WIN32 AND NOT VCPKG_TOOLCHAIN)
     # Windows cross-compile with MinGW: need specific link order for SDL2
     # Order: mingw32 -> SDL2main -> SDL2 -> extensions
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        ${SDL2_INCLUDE_DIRS}
+        ${SDL2_IMAGE_INCLUDE_DIRS}
+        ${SDL2_MIXER_INCLUDE_DIRS}
+        ${SDL2_TTF_INCLUDE_DIRS}
+    )
     target_link_libraries(${PROJECT_NAME} PRIVATE
         -lmingw32
         ${SDL2_LIBRARIES}
@@ -90,13 +92,29 @@ if(CMAKE_CROSSCOMPILING AND WIN32 AND NOT VCPKG_TOOLCHAIN)
         ${SDL2_TTF_LIBRARIES}
     )
 else()
-    # Native build or vcpkg: use imported targets
+    # Native build: try to find SDL2 using pkg-config or fallback to variables
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(SDL2 REQUIRED sdl2)
+        pkg_check_modules(SDL2_IMAGE sdl2_image)
+        pkg_check_modules(SDL2_MIXER sdl2_mixer)
+        pkg_check_modules(SDL2_TTF sdl2_ttf)
+    endif()
+
+    # Fallback: use SDL2 config files if available
+    if(NOT SDL2_FOUND)
+        find_package(SDL2 REQUIRED)
+    endif()
+
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        ${SDL2_INCLUDE_DIRS}
+    )
+
     target_link_libraries(${PROJECT_NAME} PRIVATE
-        $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
-        $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
-        $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>
-        $<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer>,SDL2_mixer::SDL2_mixer,SDL2_mixer::SDL2_mixer-static>
-        $<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf>,SDL2_ttf::SDL2_ttf,SDL2_ttf::SDL2_ttf-static>
+        ${SDL2_LIBRARIES}
+        SDL2_image
+        SDL2_mixer
+        SDL2_ttf
     )
 endif()
 

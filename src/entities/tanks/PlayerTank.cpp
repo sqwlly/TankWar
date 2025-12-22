@@ -63,26 +63,27 @@ void PlayerTank::onRender(IRenderer& renderer) {
     // Calculate sprite position based on direction and animation frame
     int dirCol = 0;
     switch (direction_) {
-        case Direction::Up:    dirCol = 0; break;
-        case Direction::Left:  dirCol = 2; break;
-        case Direction::Down:  dirCol = 4; break;
-        case Direction::Right: dirCol = 6; break;
+        case Direction::Up:    dirCol = Sprites::Tank::DIR_UP_COL; break;
+        case Direction::Down:  dirCol = Sprites::Tank::DIR_DOWN_COL; break;
+        case Direction::Left:  dirCol = Sprites::Tank::DIR_LEFT_COL; break;
+        case Direction::Right: dirCol = Sprites::Tank::DIR_RIGHT_COL; break;
     }
 
-    // Player 1: yellow (row 0), Player 2: green (row 8)
-    int baseRow = (playerId_ == 1) ? 0 : 8;
-    // Add level offset (each level adds 2 columns per direction set)
-    int levelOffset = level_ * 8;
+    // Player 1: row 0, Player 2: row 8
+    int baseY = (playerId_ == 1) ? Sprites::Tank::P1_BASE_Y : Sprites::Tank::P2_BASE_Y;
 
-    int srcX = (dirCol + animationFrame_) * Sprites::TANK_SIZE + levelOffset;
-    int srcY = baseRow * Sprites::TANK_SIZE;
+    // Get sprite frame using the Tank::getFrame helper
+    Rectangle srcRect = Sprites::Tank::getFrame(baseY, dirCol, animationFrame_, level_);
 
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
     int destSize = static_cast<int>(width_);
 
-    renderer.drawSprite(srcX, srcY, Sprites::TANK_SIZE, Sprites::TANK_SIZE,
-                       destX, destY, destSize, destSize);
+    renderer.drawSprite(
+        static_cast<int>(srcRect.x), static_cast<int>(srcRect.y),
+        static_cast<int>(srcRect.width), static_cast<int>(srcRect.height),
+        destX, destY, destSize, destSize
+    );
 
     // Render shield effect if invincible
     if (isInvincible()) {

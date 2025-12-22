@@ -75,13 +75,13 @@ void PlayingState::createTerrain() {
     terrains_.clear();
 
     const auto& terrainMap = level_->getTerrainMap();
-    int halfTile = Constants::CELL_SIZE / 2;
 
     for (int y = 0; y < level_->getHeight(); ++y) {
         for (int x = 0; x < level_->getWidth(); ++x) {
             TerrainType type = terrainMap[y][x];
-            int posX = x * halfTile;
-            int posY = y * halfTile;
+            // Use CELL_SIZE for proper spacing between terrain blocks
+            int posX = x * Constants::CELL_SIZE;
+            int posY = y * Constants::CELL_SIZE;
 
             switch (type) {
                 case TerrainType::Brick:
@@ -186,6 +186,9 @@ void PlayingState::updateEntities(float deltaTime) {
 }
 
 void PlayingState::checkCollisions() {
+    // Tank vs Terrain collisions (must happen before any other checks)
+    checkTankTerrainCollisions();
+
     // Bullets vs Base
     if (base_ && base_->isAlive()) {
         for (auto& bullet : bullets_) {
@@ -471,6 +474,59 @@ void PlayingState::nextLevel() {
         currentLevel_ = 1;  // Or go to victory state
     }
     loadLevel();
+}
+
+void PlayingState::checkTankTerrainCollisions() {
+    // Collect all tanks
+    std::vector<Tank*> allTanks;
+    if (player1_ && player1_->isAlive() && !player1_->isSpawning()) {
+        allTanks.push_back(player1_.get());
+    }
+    if (player2_ && player2_->isAlive() && !player2_->isSpawning()) {
+        allTanks.push_back(player2_.get());
+    }
+    for (auto& enemy : enemies_) {
+        if (enemy->isAlive() && !enemy->isSpawning()) {
+            allTanks.push_back(enemy.get());
+        }
+    }
+
+    // Check each tank against terrain and base
+    for (Tank* tank : allTanks) {
+        Rectangle tankBounds = tank->getBounds();
+        bool collided = false;
+
+        // Check against base
+        if (base_ && base_->isAlive()) {
+            if (CollisionManager::checkAABB(tankBounds, base_->getBounds())) {
+                tank->stay();
+                collided = true;
+            }
+        }
+
+        if (collided) continue;
+
+        // Check against terrain
+        for (auto& terrain : terrains_) {
+            if (terrain->isTankPassable()) continue;
+            if (terrain->isDestroyed()) continue;
+
+            if (CollisionManager::checkAABB(tankBounds, terrain->getBounds())) {
+                tank->stay();
+                break;
+            }
+        }
+    }
+
+    // Tank vs Tank collisions
+    for (size_t i = 0; i < allTanks.size(); ++i) {
+        for (size_t j = i + 1; j < allTanks.size(); ++j) {
+            if (CollisionManager::checkAABB(allTanks[i]->getBounds(), allTanks[j]->getBounds())) {
+                allTanks[i]->stay();
+                allTanks[j]->stay();
+            }
+        }
+    }
 }
 
 } // namespace tank

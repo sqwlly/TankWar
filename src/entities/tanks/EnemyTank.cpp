@@ -67,31 +67,32 @@ void EnemyTank::onRender(IRenderer& renderer) {
     // Calculate sprite position based on direction and animation frame
     int dirCol = 0;
     switch (direction_) {
-        case Direction::Up:    dirCol = 0; break;
-        case Direction::Left:  dirCol = 2; break;
-        case Direction::Down:  dirCol = 4; break;
-        case Direction::Right: dirCol = 6; break;
+        case Direction::Up:    dirCol = Sprites::Tank::DIR_UP_COL; break;
+        case Direction::Down:  dirCol = Sprites::Tank::DIR_DOWN_COL; break;
+        case Direction::Left:  dirCol = Sprites::Tank::DIR_LEFT_COL; break;
+        case Direction::Right: dirCol = Sprites::Tank::DIR_RIGHT_COL; break;
     }
 
-    // Enemy type determines row (4 rows after player tanks)
-    // Basic: row 4, Fast: row 5, Power: row 6, Heavy: row 7
-    int baseRow = 4 + static_cast<int>(enemyType_);
+    // Enemy type determines base Y position
+    int baseY = Sprites::Tank::ENEMY_BASIC_Y;
+    int typeOffset = static_cast<int>(enemyType_);
 
-    // Flashing effect if carrying power-up (use different color)
-    int colorOffset = 0;
+    // Flashing effect if carrying power-up
+    int xOffset = 0;
     if (carriesPowerUp_) {
-        // Alternate between normal and red color (flash)
-        colorOffset = (animationFrame_ % 2) ? 128 : 0;
+        // Alternate between normal and flash position
+        xOffset = (animationFrame_ % 2) ? Sprites::Tank::FLASH_OFFSET_X : 0;
     }
 
-    int srcX = (dirCol + animationFrame_) * Sprites::TANK_SIZE + colorOffset;
-    int srcY = baseRow * Sprites::TANK_SIZE;
+    // Calculate source coordinates
+    int srcX = (typeOffset * 8 + dirCol + animationFrame_) * Sprites::ELEMENT_SIZE + xOffset;
+    int srcY = baseY;
 
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
     int destSize = static_cast<int>(width_);
 
-    renderer.drawSprite(srcX, srcY, Sprites::TANK_SIZE, Sprites::TANK_SIZE,
+    renderer.drawSprite(srcX, srcY, Sprites::ELEMENT_SIZE, Sprites::ELEMENT_SIZE,
                        destX, destY, destSize, destSize);
 }
 

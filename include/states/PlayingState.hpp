@@ -98,6 +98,7 @@ private:
 
     void updateEntities(float deltaTime);
     void checkCollisions();
+    void checkTankTerrainCollisions();
     void removeDeadEntities();
     void checkGameState();
 

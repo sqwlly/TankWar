@@ -7,215 +7,233 @@ namespace tank {
 
 /**
  * @brief Sprite sheet region definitions for tank_sprite.png
- * Standard Battle City sprite layout: 16x16 tanks, 8x8 terrain blocks
+ *
+ * Sprite sheet dimensions: 1088 x 442 pixels
+ * Element size: 34 pixels (32 columns, 13 rows)
  */
 namespace Sprites {
 
-// Sprite dimensions
-constexpr int TANK_SIZE = 16;
-constexpr int TERRAIN_SIZE = 8;
-constexpr int BULLET_SIZE = 8;
-constexpr int POWERUP_SIZE = 16;
-constexpr int EXPLOSION_SIZE = 16;
-constexpr int BIG_EXPLOSION_SIZE = 32;
+// Base element size
+constexpr int ELEMENT_SIZE = 34;
+constexpr int HALF_SIZE = 17;  // For terrain blocks
 
-// Scale factor for rendering (original is 16x16, we render at 32x32)
-constexpr int SCALE = 2;
+// Legacy compatibility
+constexpr int TANK_SIZE = ELEMENT_SIZE;
+constexpr int TERRAIN_SIZE = HALF_SIZE;
+constexpr int BULLET_SIZE = 10;
+constexpr int POWERUP_SIZE = ELEMENT_SIZE;
+constexpr int EXPLOSION_SIZE = ELEMENT_SIZE;
+constexpr int BIG_EXPLOSION_SIZE = ELEMENT_SIZE * 2;
 
 /**
  * @brief Tank sprite regions
- * Layout: 8 columns per direction (2 animation frames x 4 upgrade levels)
- * Rows: Up, Left, Down, Right for each tank type
+ *
+ * Player 1 (Yellow): Row 0-3 (y=0), 8 frames per level × 4 levels = 32 frames
+ * Player 2 (Green): Row 8 (y=272)
+ *
+ * Frame layout per level: UP1, UP2, DOWN1, DOWN2, LEFT1, LEFT2, RIGHT1, RIGHT2
  */
 namespace Tank {
-    // Player 1 (Yellow) - rows 0-3
-    constexpr int P1_ROW_UP = 0;
-    constexpr int P1_ROW_LEFT = 0;
-    constexpr int P1_ROW_DOWN = 0;
-    constexpr int P1_ROW_RIGHT = 0;
-
-    // Direction offsets within a row (each direction has 2 frames)
-    constexpr int DIR_UP_COL = 0;
-    constexpr int DIR_LEFT_COL = 2;
-    constexpr int DIR_DOWN_COL = 4;
-    constexpr int DIR_RIGHT_COL = 6;
-
-    // Player 1 tank rows (4 rows for 4 upgrade levels)
+    // Player 1 base Y
     constexpr int P1_BASE_Y = 0;
 
-    // Player 2 (Green) - rows 8-11
-    constexpr int P2_BASE_Y = 128;  // 8 * 16
+    // Player 2 base Y (row 8)
+    constexpr int P2_BASE_Y = 8 * ELEMENT_SIZE;  // 272
 
-    // Enemy tanks start at row 4
-    constexpr int ENEMY_BASE_Y = 64;  // 4 * 16
+    // Enemy tanks start at row 2
+    constexpr int ENEMY_BASIC_Y = 2 * ELEMENT_SIZE;   // 68
+    constexpr int ENEMY_FAST_Y = 2 * ELEMENT_SIZE;    // Same row, different columns
+    constexpr int ENEMY_POWER_Y = 2 * ELEMENT_SIZE;
+    constexpr int ENEMY_ARMOR_Y = 0;  // Armored tanks at row 0, different x
 
-    // Enemy types (each has 4 rows for directions)
-    constexpr int ENEMY_BASIC_Y = 64;
-    constexpr int ENEMY_FAST_Y = 128;
-    constexpr int ENEMY_POWER_Y = 192;
-    constexpr int ENEMY_ARMOR_Y = 256;
+    // Direction column offsets (2 frames each)
+    constexpr int DIR_UP_COL = 0;
+    constexpr int DIR_DOWN_COL = 2;
+    constexpr int DIR_LEFT_COL = 4;
+    constexpr int DIR_RIGHT_COL = 6;
 
-    // Flashing enemy (carries powerup) - add 128 to X
-    constexpr int FLASH_OFFSET_X = 128;
+    // Flashing enemy offset
+    constexpr int FLASH_OFFSET_X = 24 * ELEMENT_SIZE;  // 816
 
     inline Rectangle getFrame(int baseY, int directionCol, int frame, int level = 0) {
-        int x = (directionCol + frame) * TANK_SIZE + (level * 128);
+        int x = (level * 8 + directionCol + frame) * ELEMENT_SIZE;
         int y = baseY;
         return Rectangle(static_cast<float>(x), static_cast<float>(y),
-                        TANK_SIZE, TANK_SIZE);
+                        ELEMENT_SIZE, ELEMENT_SIZE);
     }
 }
 
 /**
  * @brief Terrain sprite regions
- * 8x8 pixel terrain blocks
+ *
+ * Brick: (136, 170) - row 5, column 4
+ * Steel: (0, 204) - row 6, column 0
+ * Water: (0, 238) - row 7, column 0, 2 frames
+ * Grass: (136, 238) - row 7, column 4
  */
 namespace Terrain {
-    // Terrain Y position in sprite sheet
-    constexpr int TERRAIN_Y = 256;
-
-    // Brick wall (4 variants for damage states)
-    constexpr int BRICK_X = 256;
-    constexpr int BRICK_Y = 64;
+    // Brick wall
+    constexpr int BRICK_X = 4 * ELEMENT_SIZE;   // 136
+    constexpr int BRICK_Y = 5 * ELEMENT_SIZE;   // 170
 
     // Steel wall
-    constexpr int STEEL_X = 256;
-    constexpr int STEEL_Y = 72;
+    constexpr int STEEL_X = 0;
+    constexpr int STEEL_Y = 6 * ELEMENT_SIZE;   // 204
 
-    // Water (animated, 2 frames)
-    constexpr int WATER_X = 256;
-    constexpr int WATER_Y = 80;
+    // Water (animated)
+    constexpr int WATER_X = 0;
+    constexpr int WATER_Y = 7 * ELEMENT_SIZE;   // 238
 
-    // Grass (renders on top)
-    constexpr int GRASS_X = 264;
-    constexpr int GRASS_Y = 72;
-
-    // Ice
-    constexpr int ICE_X = 272;
-    constexpr int ICE_Y = 72;
+    // Grass
+    constexpr int GRASS_X = 4 * ELEMENT_SIZE;   // 136
+    constexpr int GRASS_Y = 7 * ELEMENT_SIZE;   // 238
 
     inline Rectangle getBrick(int variant = 0) {
-        return Rectangle(BRICK_X + variant * TERRAIN_SIZE, BRICK_Y,
-                        TERRAIN_SIZE, TERRAIN_SIZE);
+        return Rectangle(static_cast<float>(BRICK_X + variant * ELEMENT_SIZE),
+                        static_cast<float>(BRICK_Y),
+                        ELEMENT_SIZE, ELEMENT_SIZE);
     }
 
     inline Rectangle getSteel() {
-        return Rectangle(STEEL_X, STEEL_Y, TERRAIN_SIZE, TERRAIN_SIZE);
+        return Rectangle(static_cast<float>(STEEL_X),
+                        static_cast<float>(STEEL_Y),
+                        ELEMENT_SIZE, ELEMENT_SIZE);
     }
 
     inline Rectangle getWater(int frame) {
-        return Rectangle(WATER_X + frame * TERRAIN_SIZE, WATER_Y,
-                        TERRAIN_SIZE, TERRAIN_SIZE);
+        return Rectangle(static_cast<float>(WATER_X + (frame % 2) * ELEMENT_SIZE),
+                        static_cast<float>(WATER_Y),
+                        ELEMENT_SIZE, ELEMENT_SIZE);
     }
 
     inline Rectangle getGrass() {
-        return Rectangle(GRASS_X, GRASS_Y, TERRAIN_SIZE, TERRAIN_SIZE);
+        return Rectangle(static_cast<float>(GRASS_X),
+                        static_cast<float>(GRASS_Y),
+                        HALF_SIZE, HALF_SIZE);
     }
 
     inline Rectangle getIce() {
-        return Rectangle(ICE_X, ICE_Y, TERRAIN_SIZE, TERRAIN_SIZE);
+        // Ice is at same row as grass, next to it
+        return Rectangle(static_cast<float>(GRASS_X + ELEMENT_SIZE),
+                        static_cast<float>(GRASS_Y),
+                        ELEMENT_SIZE, ELEMENT_SIZE);
     }
 }
 
 /**
  * @brief Base (Eagle) sprite
+ * Position: (646, 170) - row 5, column 19
  */
 namespace Base {
-    constexpr int BASE_X = 304;
-    constexpr int BASE_Y = 64;
-    constexpr int BASE_SIZE = 16;
+    constexpr int BASE_X = 19 * ELEMENT_SIZE;   // 646
+    constexpr int BASE_Y = 5 * ELEMENT_SIZE;    // 170
+    constexpr int BASE_SIZE = ELEMENT_SIZE;
 
-    // Normal base
     inline Rectangle getNormal() {
-        return Rectangle(BASE_X, BASE_Y, BASE_SIZE, BASE_SIZE);
+        return Rectangle(static_cast<float>(BASE_X), static_cast<float>(BASE_Y),
+                        BASE_SIZE, BASE_SIZE);
     }
 
-    // Destroyed base
     inline Rectangle getDestroyed() {
-        return Rectangle(BASE_X + BASE_SIZE, BASE_Y, BASE_SIZE, BASE_SIZE);
+        return Rectangle(static_cast<float>(BASE_X + BASE_SIZE), static_cast<float>(BASE_Y),
+                        BASE_SIZE, BASE_SIZE);
     }
 }
 
 /**
- * @brief Bullet sprites (4 directions)
+ * @brief Bullet sprites
+ * Position: (0, 170) - row 5, column 0
+ * 4 directions in a 2x2 grid, each 10x10 pixels
  */
 namespace Bullet {
-    constexpr int BULLET_X = 320;
-    constexpr int BULLET_Y = 100;
+    constexpr int BULLET_X = 0;
+    constexpr int BULLET_Y = 5 * ELEMENT_SIZE;  // 170
+    constexpr int SIZE = 10;
 
     inline Rectangle get(Direction dir) {
-        int offset = 0;
+        // Bullets arranged: UP=0, DOWN=1, LEFT=2, RIGHT=3
+        int index = 0;
         switch (dir) {
-            case Direction::Up:    offset = 0; break;
-            case Direction::Left:  offset = 1; break;
-            case Direction::Down:  offset = 2; break;
-            case Direction::Right: offset = 3; break;
+            case Direction::Up:    index = 0; break;
+            case Direction::Down:  index = 1; break;
+            case Direction::Left:  index = 2; break;
+            case Direction::Right: index = 3; break;
         }
-        return Rectangle(BULLET_X + offset * BULLET_SIZE, BULLET_Y,
-                        BULLET_SIZE, BULLET_SIZE);
+        int row = index / 2;
+        int col = index % 2;
+        return Rectangle(static_cast<float>(BULLET_X + col * SIZE),
+                        static_cast<float>(BULLET_Y + row * SIZE),
+                        SIZE, SIZE);
     }
 }
 
 /**
  * @brief Power-up sprites
+ * Position: (408, 204) - row 6, column 12
  */
 namespace PowerUp {
-    constexpr int POWERUP_X = 256;
-    constexpr int POWERUP_Y = 112;
+    constexpr int POWERUP_X = 12 * ELEMENT_SIZE;  // 408
+    constexpr int POWERUP_Y = 6 * ELEMENT_SIZE;   // 204
 
-    // Power-up types in order
     inline Rectangle get(PowerUpType type) {
         int index = static_cast<int>(type);
-        return Rectangle(POWERUP_X + index * POWERUP_SIZE, POWERUP_Y,
-                        POWERUP_SIZE, POWERUP_SIZE);
+        return Rectangle(static_cast<float>(POWERUP_X + index * ELEMENT_SIZE),
+                        static_cast<float>(POWERUP_Y),
+                        ELEMENT_SIZE, ELEMENT_SIZE);
     }
 }
 
 /**
  * @brief Explosion animation frames
+ * Small explosion: (680, 136) - row 4, column 20
+ * Big explosion: (782, 136) - row 4, column 23
  */
 namespace Explosion {
-    constexpr int SMALL_X = 256;
-    constexpr int SMALL_Y = 128;
-    constexpr int BIG_X = 304;
-    constexpr int BIG_Y = 128;
+    constexpr int SMALL_X = 20 * ELEMENT_SIZE;  // 680
+    constexpr int SMALL_Y = 4 * ELEMENT_SIZE;   // 136
+    constexpr int BIG_X = 23 * ELEMENT_SIZE;    // 782
+    constexpr int BIG_Y = 4 * ELEMENT_SIZE;     // 136
 
-    // Small explosion (bullet hit) - 3 frames
     inline Rectangle getSmall(int frame) {
-        return Rectangle(SMALL_X + frame * EXPLOSION_SIZE, SMALL_Y,
-                        EXPLOSION_SIZE, EXPLOSION_SIZE);
+        return Rectangle(static_cast<float>(SMALL_X + (frame % 3) * ELEMENT_SIZE),
+                        static_cast<float>(SMALL_Y),
+                        ELEMENT_SIZE, ELEMENT_SIZE);
     }
 
-    // Big explosion (tank destroyed) - 2 frames
     inline Rectangle getBig(int frame) {
-        return Rectangle(BIG_X + frame * BIG_EXPLOSION_SIZE, BIG_Y,
+        return Rectangle(static_cast<float>(BIG_X + (frame % 2) * BIG_EXPLOSION_SIZE),
+                        static_cast<float>(BIG_Y),
                         BIG_EXPLOSION_SIZE, BIG_EXPLOSION_SIZE);
     }
 }
 
 /**
  * @brief Spawn animation (star effect)
+ * Position: (544, 136) - row 4, column 16
  */
 namespace Spawn {
-    constexpr int SPAWN_X = 256;
-    constexpr int SPAWN_Y = 96;
+    constexpr int SPAWN_X = 16 * ELEMENT_SIZE;  // 544
+    constexpr int SPAWN_Y = 4 * ELEMENT_SIZE;   // 136
 
     inline Rectangle get(int frame) {
-        return Rectangle(SPAWN_X + frame * POWERUP_SIZE, SPAWN_Y,
-                        POWERUP_SIZE, POWERUP_SIZE);
+        return Rectangle(static_cast<float>(SPAWN_X + (frame % 4) * ELEMENT_SIZE),
+                        static_cast<float>(SPAWN_Y),
+                        ELEMENT_SIZE, ELEMENT_SIZE);
     }
 }
 
 /**
  * @brief Shield animation (invincibility)
+ * Position: (442, 238) - row 7, column 13
  */
 namespace Shield {
-    constexpr int SHIELD_X = 256;
-    constexpr int SHIELD_Y = 144;
+    constexpr int SHIELD_X = 13 * ELEMENT_SIZE;  // 442
+    constexpr int SHIELD_Y = 7 * ELEMENT_SIZE;   // 238
 
     inline Rectangle get(int frame) {
-        return Rectangle(SHIELD_X + (frame % 2) * POWERUP_SIZE, SHIELD_Y,
-                        POWERUP_SIZE, POWERUP_SIZE);
+        return Rectangle(static_cast<float>(SHIELD_X + (frame % 2) * ELEMENT_SIZE),
+                        static_cast<float>(SHIELD_Y),
+                        ELEMENT_SIZE, ELEMENT_SIZE);
     }
 }
 
@@ -223,31 +241,37 @@ namespace Shield {
  * @brief UI elements
  */
 namespace UI {
-    // Enemy icon for HUD
-    constexpr int ENEMY_ICON_X = 320;
-    constexpr int ENEMY_ICON_Y = 192;
-    constexpr int ICON_SIZE = 8;
+    // Enemy icon: (34, 136) - row 4, column 1
+    constexpr int ENEMY_ICON_X = 1 * ELEMENT_SIZE;   // 34
+    constexpr int ENEMY_ICON_Y = 4 * ELEMENT_SIZE;   // 136
+    constexpr int ICON_SIZE = ELEMENT_SIZE;
 
-    // Player life icon
-    constexpr int LIFE_ICON_X = 320;
-    constexpr int LIFE_ICON_Y = 200;
+    // Player icon: (340, 204) - row 6, column 10
+    constexpr int LIFE_ICON_X = 10 * ELEMENT_SIZE;   // 340
+    constexpr int LIFE_ICON_Y = 6 * ELEMENT_SIZE;    // 204
 
-    // Flag icon
-    constexpr int FLAG_X = 336;
-    constexpr int FLAG_Y = 184;
-    constexpr int FLAG_W = 16;
-    constexpr int FLAG_H = 16;
+    // Flag
+    constexpr int FLAG_X = 11 * ELEMENT_SIZE;        // 374
+    constexpr int FLAG_Y = 6 * ELEMENT_SIZE;         // 204
+    constexpr int FLAG_W = ELEMENT_SIZE;
+    constexpr int FLAG_H = ELEMENT_SIZE;
 
     inline Rectangle getEnemyIcon() {
-        return Rectangle(ENEMY_ICON_X, ENEMY_ICON_Y, ICON_SIZE, ICON_SIZE);
+        return Rectangle(static_cast<float>(ENEMY_ICON_X),
+                        static_cast<float>(ENEMY_ICON_Y),
+                        ICON_SIZE, ICON_SIZE);
     }
 
     inline Rectangle getLifeIcon() {
-        return Rectangle(LIFE_ICON_X, LIFE_ICON_Y, ICON_SIZE, ICON_SIZE);
+        return Rectangle(static_cast<float>(LIFE_ICON_X),
+                        static_cast<float>(LIFE_ICON_Y),
+                        ICON_SIZE, ICON_SIZE);
     }
 
     inline Rectangle getFlag() {
-        return Rectangle(FLAG_X, FLAG_Y, FLAG_W, FLAG_H);
+        return Rectangle(static_cast<float>(FLAG_X),
+                        static_cast<float>(FLAG_Y),
+                        FLAG_W, FLAG_H);
     }
 }
 
