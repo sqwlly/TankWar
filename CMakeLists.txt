@@ -91,31 +91,41 @@ if(CMAKE_CROSSCOMPILING AND WIN32 AND NOT VCPKG_TOOLCHAIN)
         ${SDL2_MIXER_LIBRARIES}
         ${SDL2_TTF_LIBRARIES}
     )
+elseif(VCPKG_TOOLCHAIN OR WIN32)
+    # vcpkg or native Windows: use imported targets from find_package
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+        $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,$<IF:$<TARGET_EXISTS:SDL2::SDL2-static>,SDL2::SDL2-static,SDL2>>
+        $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,$<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image-static>,SDL2_image::SDL2_image-static,SDL2_image>>
+        $<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer>,SDL2_mixer::SDL2_mixer,$<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer-static>,SDL2_mixer::SDL2_mixer-static,SDL2_mixer>>
+        $<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf>,SDL2_ttf::SDL2_ttf,$<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf-static>,SDL2_ttf::SDL2_ttf-static,SDL2_ttf>>
+    )
 else()
-    # Native build: try to find SDL2 using pkg-config or fallback to variables
+    # Native Linux build: try pkg-config first, then imported targets
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
-        pkg_check_modules(SDL2 REQUIRED sdl2)
-        pkg_check_modules(SDL2_IMAGE sdl2_image)
-        pkg_check_modules(SDL2_MIXER sdl2_mixer)
-        pkg_check_modules(SDL2_TTF sdl2_ttf)
+        pkg_check_modules(SDL2_PC sdl2)
+        if(SDL2_PC_FOUND)
+            target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_PC_INCLUDE_DIRS})
+            target_link_libraries(${PROJECT_NAME} PRIVATE
+                ${SDL2_PC_LIBRARIES}
+                SDL2_image
+                SDL2_mixer
+                SDL2_ttf
+            )
+        endif()
     endif()
 
-    # Fallback: use SDL2 config files if available
-    if(NOT SDL2_FOUND)
-        find_package(SDL2 REQUIRED)
+    # Fallback to imported targets if pkg-config didn't work
+    if(NOT SDL2_PC_FOUND)
+        target_link_libraries(${PROJECT_NAME} PRIVATE
+            $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+            SDL2::SDL2
+            SDL2_image::SDL2_image
+            SDL2_mixer::SDL2_mixer
+            SDL2_ttf::SDL2_ttf
+        )
     endif()
-
-    target_include_directories(${PROJECT_NAME} PRIVATE
-        ${SDL2_INCLUDE_DIRS}
-    )
-
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        ${SDL2_LIBRARIES}
-        SDL2_image
-        SDL2_mixer
-        SDL2_ttf
-    )
 endif()
 
 # Copy assets to build directory
