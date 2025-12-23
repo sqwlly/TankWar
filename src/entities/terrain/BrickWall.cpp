@@ -80,8 +80,8 @@ void BrickWall::onRender(IRenderer& renderer) {
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
 
-    // Java renders at ELEMENT_SIZE + 1 = 35 to avoid gaps between tiles
-    int destSize = Sprites::ELEMENT_SIZE + 1;
+    // Java renders at ELEMENT_SIZE to match sprite exactly
+    int destSize = Sprites::ELEMENT_SIZE;
 
     renderer.drawSprite(srcX, srcY, Sprites::ELEMENT_SIZE, Sprites::ELEMENT_SIZE,
                        destX, destY, destSize, destSize);
