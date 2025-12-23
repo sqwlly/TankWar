@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 #include "utils/Constants.hpp"
+#include "utils/DamageCalculator.hpp"
 #include "utils/Vector2.hpp"
 #include "utils/Rectangle.hpp"
 

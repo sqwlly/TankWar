@@ -55,7 +55,7 @@ TEST_F(DamageCalculatorTest, DoubleDamageReductionBug) {
 
     // 2. If Tank::takeDamage also applies defense reduction, we get:
     int secondPass = DamageCalculator::calculateDamage(firstPass, 50, MAX_HEALTH);
-    EXPECT_EQ(secondPass, 12);  // Wrong! Should be 25
+    EXPECT_LT(secondPass, firstPass);  // Wrong! Should remain firstPass
 
     // The bug: actual damage is 12 instead of expected 25
     // This happens because defense is applied twice

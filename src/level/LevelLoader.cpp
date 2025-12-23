@@ -40,9 +40,13 @@ bool LevelLoader::saveToFile(const Level& level, const std::string& filePath) {
 
     // Write enemy list
     const auto& enemies = level.getEnemySpawnList();
+    file << "@";
     for (const auto& enemy : enemies) {
         int value = static_cast<int>(enemy.type) + 1;  // 1-based in file
         file << value;
+        if (enemy.hasPowerUp) {
+            file << "*";
+        }
     }
     file << "\n";
 
@@ -63,15 +67,30 @@ bool LevelLoader::saveToFile(const Level& level, const std::string& filePath) {
 void LevelLoader::parseEnemyList(const std::string& line, Level& level) {
     level.clearEnemySpawns();
 
-    for (char c : line) {
+    const bool explicitPowerUp = !line.empty() && line[0] == '@';
+    size_t lastIndex = static_cast<size_t>(-1);
+
+    for (size_t i = 0; i < line.size(); ++i) {
+        const char c = line[i];
+        if (i == 0 && explicitPowerUp) continue;
+
         if (c >= '1' && c <= '4') {
             int typeIndex = c - '1';  // Convert to 0-based
             EnemyType type = static_cast<EnemyType>(typeIndex);
 
-            // Every 4th enemy has a power-up (original game logic)
-            bool hasPowerUp = (level.getEnemySpawnList().size() % 4 == 3);
+            bool hasPowerUp = false;
+            if (!explicitPowerUp) {
+                // Legacy behavior: every 4th enemy has a power-up (original game logic)
+                hasPowerUp = (level.getEnemySpawnList().size() % 4 == 3);
+            }
 
             level.addEnemySpawn(type, hasPowerUp);
+            lastIndex = level.getEnemySpawnList().size() - 1;
+            continue;
+        }
+
+        if (explicitPowerUp && c == '*' && lastIndex != static_cast<size_t>(-1)) {
+            level.setEnemySpawnPowerUp(lastIndex, true);
         }
     }
 }
@@ -92,13 +111,14 @@ void LevelLoader::parseMapGrid(std::ifstream& file, Level& level) {
 
 TerrainType LevelLoader::valueToTerrainType(int value) {
     // Map file values to TerrainType (matching Constants.hpp)
-    // File: 0=Empty, 1=Steel, 2=Brick, 3=Water, 4=Grass
+    // File (legacy compatible): 0=Empty, 1=Steel, 2=Brick, 3=Water, 4/5=Grass
     switch (value) {
         case 0: return TerrainType::Empty;
         case 1: return TerrainType::Steel;
         case 2: return TerrainType::Brick;
         case 3: return TerrainType::Water;
         case 4: return TerrainType::Grass;
+        case 5: return TerrainType::Grass;
         default: return TerrainType::Empty;
     }
 }
@@ -109,7 +129,7 @@ int LevelLoader::terrainTypeToValue(TerrainType type) {
         case TerrainType::Steel: return 1;
         case TerrainType::Brick: return 2;
         case TerrainType::Water: return 3;
-        case TerrainType::Grass: return 4;
+        case TerrainType::Grass: return 5;
         case TerrainType::Base:  return 0;  // Base is special, not in grid
         default: return 0;
     }

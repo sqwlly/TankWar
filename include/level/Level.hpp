@@ -38,6 +38,11 @@ public:
     const std::vector<EnemySpawnInfo>& getEnemySpawnList() const { return enemySpawnList_; }
     void addEnemySpawn(EnemyType type, bool hasPowerUp = false);
     void clearEnemySpawns() { enemySpawnList_.clear(); }
+    size_t getEnemySpawnCount() const { return enemySpawnList_.size(); }
+    const EnemySpawnInfo* getEnemySpawn(size_t index) const;
+    bool setEnemySpawnType(size_t index, EnemyType type);
+    bool setEnemySpawnPowerUp(size_t index, bool hasPowerUp);
+    bool toggleEnemySpawnPowerUp(size_t index);
 
     // Player spawn positions
     Vector2 getPlayer1Spawn() const { return player1Spawn_; }

@@ -1,4 +1,5 @@
 #include "level/Level.hpp"
+#include <cstddef>
 
 namespace tank {
 
@@ -42,6 +43,29 @@ TerrainType Level::getTerrainAt(int x, int y) const {
 
 void Level::addEnemySpawn(EnemyType type, bool hasPowerUp) {
     enemySpawnList_.push_back({type, hasPowerUp});
+}
+
+const EnemySpawnInfo* Level::getEnemySpawn(size_t index) const {
+    if (index >= enemySpawnList_.size()) return nullptr;
+    return &enemySpawnList_[index];
+}
+
+bool Level::setEnemySpawnType(size_t index, EnemyType type) {
+    if (index >= enemySpawnList_.size()) return false;
+    enemySpawnList_[index].type = type;
+    return true;
+}
+
+bool Level::setEnemySpawnPowerUp(size_t index, bool hasPowerUp) {
+    if (index >= enemySpawnList_.size()) return false;
+    enemySpawnList_[index].hasPowerUp = hasPowerUp;
+    return true;
+}
+
+bool Level::toggleEnemySpawnPowerUp(size_t index) {
+    if (index >= enemySpawnList_.size()) return false;
+    enemySpawnList_[index].hasPowerUp = !enemySpawnList_[index].hasPowerUp;
+    return true;
 }
 
 void Level::clear() {

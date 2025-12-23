@@ -27,6 +27,7 @@ public:
     void changeToStage(int levelNumber);
     void changeToPlaying(int levelNumber, bool twoPlayer);
     void changeToScore(int levelNumber, bool victory);
+    void changeToConstruction(int levelNumber = 1);
 
     // Update and render
     void update(float deltaTime);

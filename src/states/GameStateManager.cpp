@@ -3,6 +3,7 @@
 #include "states/StageState.hpp"
 #include "states/PlayingState.hpp"
 #include "states/ScoreState.hpp"
+#include "states/ConstructionState.hpp"
 #include "input/InputManager.hpp"
 #include <iostream>
 
@@ -34,6 +35,10 @@ void GameStateManager::changeToPlaying(int levelNumber, bool twoPlayer) {
 
 void GameStateManager::changeToScore(int levelNumber, bool victory) {
     changeState(std::make_unique<ScoreState>(*this, levelNumber, victory));
+}
+
+void GameStateManager::changeToConstruction(int levelNumber) {
+    changeState(std::make_unique<ConstructionState>(*this, levelNumber));
 }
 
 void GameStateManager::processPendingOperations() {

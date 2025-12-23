@@ -5,6 +5,8 @@ namespace tank {
 InputManager::InputManager() {
     currentKeys_.fill(false);
     previousKeys_.fill(false);
+    currentMouseButtons_.fill(false);
+    previousMouseButtons_.fill(false);
     initializeKeyMappings();
 }
 
@@ -69,6 +71,11 @@ void InputManager::processEvents() {
                 inputEvent.mouseX = event.button.x;
                 inputEvent.mouseY = event.button.y;
                 inputEvent.mouseButton = event.button.button;
+                mouseX_ = event.button.x;
+                mouseY_ = event.button.y;
+                if (event.button.button < MOUSE_BUTTON_COUNT) {
+                    currentMouseButtons_[event.button.button] = true;
+                }
                 break;
 
             case SDL_MOUSEBUTTONUP:
@@ -76,12 +83,19 @@ void InputManager::processEvents() {
                 inputEvent.mouseX = event.button.x;
                 inputEvent.mouseY = event.button.y;
                 inputEvent.mouseButton = event.button.button;
+                mouseX_ = event.button.x;
+                mouseY_ = event.button.y;
+                if (event.button.button < MOUSE_BUTTON_COUNT) {
+                    currentMouseButtons_[event.button.button] = false;
+                }
                 break;
 
             case SDL_MOUSEMOTION:
                 inputEvent.type = InputEvent::Type::MouseMove;
                 inputEvent.mouseX = event.motion.x;
                 inputEvent.mouseY = event.motion.y;
+                mouseX_ = event.motion.x;
+                mouseY_ = event.motion.y;
                 break;
         }
 
@@ -93,6 +107,7 @@ void InputManager::processEvents() {
 
 void InputManager::update() {
     previousKeys_ = currentKeys_;
+    previousMouseButtons_ = currentMouseButtons_;
 }
 
 SDL_Scancode InputManager::keyToScancode(SDL_Keycode key) const {
@@ -133,6 +148,27 @@ bool InputManager::isKeyDown(SDL_Scancode scancode) const {
 bool InputManager::isKeyPressed(SDL_Scancode scancode) const {
     if (scancode < SDL_NUM_SCANCODES) {
         return currentKeys_[scancode] && !previousKeys_[scancode];
+    }
+    return false;
+}
+
+bool InputManager::isMouseButtonDown(uint8_t button) const {
+    if (button < MOUSE_BUTTON_COUNT) {
+        return currentMouseButtons_[button];
+    }
+    return false;
+}
+
+bool InputManager::isMouseButtonPressed(uint8_t button) const {
+    if (button < MOUSE_BUTTON_COUNT) {
+        return currentMouseButtons_[button] && !previousMouseButtons_[button];
+    }
+    return false;
+}
+
+bool InputManager::isMouseButtonReleased(uint8_t button) const {
+    if (button < MOUSE_BUTTON_COUNT) {
+        return !currentMouseButtons_[button] && previousMouseButtons_[button];
     }
     return false;
 }

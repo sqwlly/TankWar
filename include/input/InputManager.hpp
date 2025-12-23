@@ -59,6 +59,13 @@ public:
     bool isKeyPressed(SDL_Scancode scancode) const;  // Scancode version
     bool isKeyReleased(SDL_Keycode key) const; // Just released this frame
 
+    // Mouse state
+    int getMouseX() const { return mouseX_; }
+    int getMouseY() const { return mouseY_; }
+    bool isMouseButtonDown(uint8_t button) const;
+    bool isMouseButtonPressed(uint8_t button) const;
+    bool isMouseButtonReleased(uint8_t button) const;
+
     // Player input (simplified struct)
     struct PlayerInput {
         bool up = false;
@@ -85,6 +92,13 @@ private:
     // Keyboard state
     std::array<bool, SDL_NUM_SCANCODES> currentKeys_{};
     std::array<bool, SDL_NUM_SCANCODES> previousKeys_{};
+
+    // Mouse state
+    int mouseX_ = 0;
+    int mouseY_ = 0;
+    static constexpr int MOUSE_BUTTON_COUNT = 8;
+    std::array<bool, MOUSE_BUTTON_COUNT> currentMouseButtons_{};
+    std::array<bool, MOUSE_BUTTON_COUNT> previousMouseButtons_{};
 
     // Player key mappings
     std::array<KeyMapping, 2> playerMappings_;

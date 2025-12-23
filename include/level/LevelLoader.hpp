@@ -10,9 +10,11 @@ namespace tank {
 /**
  * @brief Loads level data from file
  * File format:
- *   Line 1: Enemy types (each char 1-4 represents enemy type)
+ *   Line 1:
+ *     - Legacy: enemy types only, each char 1-4 represents enemy type (power-up derived by index)
+ *     - Explicit: starts with '@', then each enemy is 1-4 optionally followed by '*' to mark power-up
  *   Lines 2-27: 26x26 map grid
- *     0 = empty, 1 = steel, 2 = brick, 3 = grass, 5 = water
+ *     0 = empty, 1 = steel, 2 = brick, 3 = water, 4/5 = grass
  */
 class LevelLoader {
 public:

@@ -94,8 +94,7 @@ void MenuState::confirmSelection() {
             break;
 
         case MenuItem::Construction:
-            // Construction mode not implemented yet
-            std::cout << "Construction mode not available" << std::endl;
+            stateManager_.changeToConstruction(1);
             break;
     }
 }
