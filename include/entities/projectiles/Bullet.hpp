@@ -32,6 +32,7 @@ public:
     bool hasHitTarget() const { return hitTarget_; }
 
     void die();
+    void clearOwner();
     bool isAlive() const { return !hitTarget_ && active_; }
 
     // Check if bullet is out of bounds

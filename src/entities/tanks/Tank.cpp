@@ -111,6 +111,7 @@ void Tank::shoot() {
     if (!canShoot()) return;
 
     bulletCount_--;
+    pendingShot_ = true;
     onShoot();
 }
 
@@ -118,6 +119,12 @@ void Tank::onBulletDestroyed() {
     if (bulletCount_ < maxBullets_) {
         bulletCount_++;
     }
+}
+
+bool Tank::consumeShotRequest() {
+    bool fired = pendingShot_;
+    pendingShot_ = false;
+    return fired;
 }
 
 void Tank::upgrade() {

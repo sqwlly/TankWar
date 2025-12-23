@@ -58,6 +58,8 @@ public:
     void upgrade() override;
     void spawn(const Vector2& position) override;
     bool isSpawning() const override { return spawning_; }
+    bool consumeShotRequest();
+    bool hasPendingShot() const { return pendingShot_; }
 
     // Stay in place (collision response)
     void stay();
@@ -99,6 +101,7 @@ protected:
     int bulletCount_ = 1;
     int maxBullets_ = 1;
     int level_ = 0;
+    bool pendingShot_ = false;
 
     // Animation
     int animationFrame_ = 0;

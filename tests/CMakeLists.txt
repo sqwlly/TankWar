@@ -38,6 +38,17 @@ set(GAME_SOURCES
     ${SRC_DIR}/collision/handlers/BulletBulletHandler.cpp
     ${SRC_DIR}/collision/handlers/TankTankHandler.cpp
     ${SRC_DIR}/collision/handlers/TankTerrainHandler.cpp
+    ${SRC_DIR}/level/Level.cpp
+    ${SRC_DIR}/level/LevelLoader.cpp
+    ${SRC_DIR}/states/GameStateManager.cpp
+    ${SRC_DIR}/states/PlayingState.cpp
+    ${SRC_DIR}/states/MenuState.cpp
+    ${SRC_DIR}/states/StageState.cpp
+    ${SRC_DIR}/states/ScoreState.cpp
+    ${SRC_DIR}/states/ConstructionState.cpp
+    ${SRC_DIR}/input/InputManager.cpp
+    ${SRC_DIR}/ui/GameHUD.cpp
+    ${SRC_DIR}/ai/AIBehavior.cpp
 )
 
 # Create test executable
@@ -51,6 +62,11 @@ target_include_directories(TankGameTests PRIVATE
 target_link_libraries(TankGameTests PRIVATE
     GTest::gtest_main
     GTest::gmock
+    $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+    $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,$<IF:$<TARGET_EXISTS:SDL2::SDL2-static>,SDL2::SDL2-static,SDL2>>
+    $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,$<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image-static>,SDL2_image::SDL2_image-static,SDL2_image>>
+    $<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer>,SDL2_mixer::SDL2_mixer,$<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer-static>,SDL2_mixer::SDL2_mixer-static,SDL2_mixer>>
+    $<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf>,SDL2_ttf::SDL2_ttf,$<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf-static>,SDL2_ttf::SDL2_ttf-static,SDL2_ttf>>
 )
 
 # Enable testing

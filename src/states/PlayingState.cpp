@@ -6,6 +6,7 @@
 #include "collision/handlers/TankTankHandler.hpp"
 #include "collision/handlers/BulletBulletHandler.hpp"
 #include "input/InputManager.hpp"
+#include "graphics/SpriteSheet.hpp"
 #include "utils/DamageCalculator.hpp"
 #include "ai/AIBehavior.hpp"
 #include <algorithm>
@@ -19,6 +20,7 @@ PlayingState::PlayingState(GameStateManager& manager, int levelNumber, bool twoP
     : stateManager_(manager)
     , currentLevel_(levelNumber)
     , twoPlayerMode_(twoPlayer)
+    , levelFilePath_()
     , paused_(false)
     , gameOver_(false)
     , levelComplete_(false)
@@ -38,14 +40,21 @@ PlayingState::PlayingState(GameStateManager& manager, int levelNumber, bool twoP
     hud_.setCurrentLevel(currentLevel_);
 }
 
+PlayingState::PlayingState(GameStateManager& manager, int levelNumber, bool twoPlayer, const std::string& levelFilePath)
+    : PlayingState(manager, levelNumber, twoPlayer)
+{
+    levelFilePath_ = levelFilePath;
+}
+
 void PlayingState::enter() {
     setupCollisionHandlers();
     loadLevel();
 }
 
 void PlayingState::exit() {
-    enemies_.clear();
+    detachAllBulletOwners();
     bullets_.clear();
+    enemies_.clear();
     terrains_.clear();
     player1_.reset();
     player2_.reset();
@@ -53,7 +62,11 @@ void PlayingState::exit() {
 }
 
 void PlayingState::loadLevel() {
-    level_ = levelLoader_.loadLevel(currentLevel_);
+    if (!levelFilePath_.empty()) {
+        level_ = levelLoader_.loadFromFile(levelFilePath_, currentLevel_);
+    } else {
+        level_ = levelLoader_.loadLevel(currentLevel_);
+    }
     if (!level_) {
         // Create default level if load fails
         level_ = std::make_unique<Level>(currentLevel_);
@@ -155,15 +168,18 @@ void PlayingState::updateEntities(float deltaTime) {
     // Update players
     if (player1_ && player1_->isAlive()) {
         player1_->update(deltaTime);
+        handleTankShooting(*player1_);
     }
     if (player2_ && player2_->isAlive()) {
         player2_->update(deltaTime);
+        handleTankShooting(*player2_);
     }
 
     // Update enemies
     for (auto& enemy : enemies_) {
         if (enemy->isAlive()) {
             enemy->update(deltaTime);
+            handleTankShooting(*enemy);
         }
     }
 
@@ -274,8 +290,9 @@ void PlayingState::removeDeadEntities() {
     int deadEnemies = 0;
     enemies_.erase(
         std::remove_if(enemies_.begin(), enemies_.end(),
-            [&deadEnemies](const std::unique_ptr<EnemyTank>& e) {
+            [this, &deadEnemies](const std::unique_ptr<EnemyTank>& e) {
                 if (!e->isAlive()) {
+                    detachBulletsFromTank(e.get());
                     ++deadEnemies;
                     return true;
                 }
@@ -330,6 +347,11 @@ void PlayingState::checkGameState() {
 }
 
 void PlayingState::handleInput(const InputManager& input) {
+    if (!levelFilePath_.empty() && input.isKeyPressed(SDL_SCANCODE_F6)) {
+        stateManager_.popState();
+        return;
+    }
+
     if (input.isKeyPressed(SDL_SCANCODE_ESCAPE)) {
         paused_ = !paused_;
         pauseOverlay_.setActive(paused_);
@@ -443,6 +465,58 @@ void PlayingState::renderUI(IRenderer& renderer) {
 
     // Render sidebar with remaining enemies, lives, etc.
     hud_.render(renderer);
+}
+
+void PlayingState::handleTankShooting(Tank& tank) {
+    if (!tank.consumeShotRequest()) {
+        return;
+    }
+
+    Vector2 spawnPos = calculateBulletSpawnPosition(tank);
+    auto bullet = std::make_unique<Bullet>(spawnPos, tank.getDirection(), &tank, tank.getLevel());
+    addBullet(std::move(bullet));
+}
+
+Vector2 PlayingState::calculateBulletSpawnPosition(const Tank& tank) const {
+    Rectangle bounds = tank.getBounds();
+    float bulletSize = static_cast<float>(Sprites::BULLET_SIZE);
+    float spawnX = bounds.x + (bounds.width / 2.0f) - (bulletSize / 2.0f);
+    float spawnY = bounds.y + (bounds.height / 2.0f) - (bulletSize / 2.0f);
+
+    switch (tank.getDirection()) {
+        case Direction::Up:
+            spawnY = bounds.y - bulletSize;
+            break;
+        case Direction::Down:
+            spawnY = bounds.y + bounds.height;
+            break;
+        case Direction::Left:
+            spawnX = bounds.x - bulletSize;
+            break;
+        case Direction::Right:
+            spawnX = bounds.x + bounds.width;
+            break;
+    }
+
+    return Vector2(spawnX, spawnY);
+}
+
+void PlayingState::detachBulletsFromTank(ITank* tank) {
+    if (!tank) {
+        return;
+    }
+
+    for (auto& bullet : bullets_) {
+        if (bullet->getOwner() == tank) {
+            bullet->clearOwner();
+        }
+    }
+}
+
+void PlayingState::detachAllBulletOwners() {
+    for (auto& bullet : bullets_) {
+        bullet->clearOwner();
+    }
 }
 
 void PlayingState::addBullet(std::unique_ptr<Bullet> bullet) {

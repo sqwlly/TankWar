@@ -75,6 +75,10 @@ void Bullet::die() {
     // Explosion effect will be added later
 }
 
+void Bullet::clearOwner() {
+    owner_ = nullptr;
+}
+
 bool Bullet::isOutOfBounds() const {
     return position_.x < 0 ||
            position_.x >= Constants::GAME_WIDTH ||

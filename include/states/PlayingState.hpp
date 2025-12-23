@@ -15,6 +15,7 @@
 #include "ui/GameHUD.hpp"
 #include <vector>
 #include <memory>
+#include <string>
 
 namespace tank {
 
@@ -26,6 +27,7 @@ class GameStateManager;
 class PlayingState : public IGameState {
 public:
     explicit PlayingState(GameStateManager& manager, int levelNumber = 1, bool twoPlayer = false);
+    PlayingState(GameStateManager& manager, int levelNumber, bool twoPlayer, const std::string& levelFilePath);
     ~PlayingState() override = default;
 
     void enter() override;
@@ -55,6 +57,7 @@ private:
     // Level data
     int currentLevel_;
     bool twoPlayerMode_;
+    std::string levelFilePath_;
     std::unique_ptr<Level> level_;
     LevelLoader levelLoader_;
 
@@ -108,6 +111,11 @@ private:
     void renderTerrain(IRenderer& renderer);
     void renderEntities(IRenderer& renderer);
     void renderUI(IRenderer& renderer);
+
+    void handleTankShooting(Tank& tank);
+    Vector2 calculateBulletSpawnPosition(const Tank& tank) const;
+    void detachBulletsFromTank(ITank* tank);
+    void detachAllBulletOwners();
 };
 
 } // namespace tank
