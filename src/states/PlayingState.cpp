@@ -81,7 +81,9 @@ void PlayingState::loadLevel() {
 
     // Spawn initial enemies
     for (int i = 0; i < maxEnemiesOnScreen_ && i < static_cast<int>(level_->getEnemySpawnList().size()); ++i) {
-        spawnEnemy();
+        if (!spawnEnemy()) {
+            break;
+        }
     }
 }
 
@@ -149,12 +151,12 @@ void PlayingState::update(float deltaTime) {
     if (paused_) return;
 
     // Enemy spawn timer
-    enemySpawnTimer_ += deltaTime;
-    if (enemySpawnTimer_ >= SPAWN_INTERVAL_SECONDS) {
-        enemySpawnTimer_ = 0.0f;
-        if (enemiesAlive_ < maxEnemiesOnScreen_ &&
-            enemiesSpawned_ < static_cast<int>(level_->getEnemySpawnList().size())) {
-            spawnEnemy();
+    enemySpawnTimer_ = std::min(enemySpawnTimer_ + deltaTime, SPAWN_INTERVAL_SECONDS);
+    if (enemySpawnTimer_ >= SPAWN_INTERVAL_SECONDS &&
+        enemiesAlive_ < maxEnemiesOnScreen_ &&
+        enemiesSpawned_ < static_cast<int>(level_->getEnemySpawnList().size())) {
+        if (spawnEnemy()) {
+            enemySpawnTimer_ = 0.0f;
         }
     }
 
@@ -523,17 +525,33 @@ void PlayingState::addBullet(std::unique_ptr<Bullet> bullet) {
     bullets_.push_back(std::move(bullet));
 }
 
-void PlayingState::spawnEnemy() {
+bool PlayingState::spawnEnemy() {
     const auto& spawnList = level_->getEnemySpawnList();
-    if (enemiesSpawned_ >= static_cast<int>(spawnList.size())) return;
+    if (enemiesSpawned_ >= static_cast<int>(spawnList.size())) return false;
 
     const auto& spawnPoints = level_->getEnemySpawnPoints();
-    if (spawnPoints.empty()) return;
+    if (spawnPoints.empty()) return false;
+
+    const int spawnPointCount = static_cast<int>(spawnPoints.size());
+    int chosenIndex = -1;
+    Vector2 chosenPoint;
+    for (int attempt = 0; attempt < spawnPointCount; ++attempt) {
+        const int index = (currentSpawnPoint_ + attempt) % spawnPointCount;
+        const Vector2& candidate = spawnPoints[index];
+        if (!isTankSpawnAreaFree(candidate)) {
+            continue;
+        }
+        chosenIndex = index;
+        chosenPoint = candidate;
+        break;
+    }
+
+    if (chosenIndex < 0) {
+        return false;
+    }
 
     const EnemySpawnInfo& info = spawnList[enemiesSpawned_];
-    const Vector2& spawnPoint = spawnPoints[currentSpawnPoint_];
-
-    auto enemy = std::make_unique<EnemyTank>(spawnPoint, info.type);
+    auto enemy = std::make_unique<EnemyTank>(chosenPoint, info.type);
 
     // Set AI behavior for enemy tank
     enemy->setAIBehavior(std::make_unique<SimpleAI>());
@@ -544,14 +562,15 @@ void PlayingState::spawnEnemy() {
     }
 
     // Initialize spawn animation
-    enemy->spawn(spawnPoint);
+    enemy->spawn(chosenPoint);
 
     enemies_.push_back(std::move(enemy));
     ++enemiesSpawned_;
     ++enemiesAlive_;
 
     // Rotate spawn points
-    currentSpawnPoint_ = (currentSpawnPoint_ + 1) % spawnPoints.size();
+    currentSpawnPoint_ = (chosenIndex + 1) % spawnPointCount;
+    return true;
 }
 
 void PlayingState::nextLevel() {
@@ -561,6 +580,41 @@ void PlayingState::nextLevel() {
         currentLevel_ = 1;  // Or go to victory state
     }
     loadLevel();
+}
+
+bool PlayingState::isTankSpawnAreaFree(const Vector2& position) const {
+    constexpr float TANK_SIZE = Constants::ELEMENT_SIZE - 2.0f;
+    Rectangle spawnArea(position.x, position.y, TANK_SIZE, TANK_SIZE);
+
+    if (base_ && base_->isAlive() && CollisionManager::checkAABB(spawnArea, base_->getBounds())) {
+        return false;
+    }
+
+    for (const auto& terrain : terrains_) {
+        if (!terrain->isActive()) continue;
+        if (terrain->isDestroyed()) continue;
+        if (terrain->isTankPassable()) continue;
+
+        if (CollisionManager::checkAABB(spawnArea, terrain->getBounds())) {
+            return false;
+        }
+    }
+
+    if (player1_ && player1_->isAlive() && CollisionManager::checkAABB(spawnArea, player1_->getBounds())) {
+        return false;
+    }
+    if (player2_ && player2_->isAlive() && CollisionManager::checkAABB(spawnArea, player2_->getBounds())) {
+        return false;
+    }
+
+    for (const auto& enemy : enemies_) {
+        if (!enemy->isAlive()) continue;
+        if (CollisionManager::checkAABB(spawnArea, enemy->getBounds())) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void PlayingState::checkTankTerrainCollisions() {

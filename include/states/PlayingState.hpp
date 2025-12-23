@@ -49,7 +49,7 @@ public:
 
     // Add entities
     void addBullet(std::unique_ptr<Bullet> bullet);
-    void spawnEnemy();
+    bool spawnEnemy();
 
 private:
     GameStateManager& stateManager_;
@@ -116,6 +116,7 @@ private:
     Vector2 calculateBulletSpawnPosition(const Tank& tank) const;
     void detachBulletsFromTank(ITank* tank);
     void detachAllBulletOwners();
+    bool isTankSpawnAreaFree(const Vector2& position) const;
 };
 
 } // namespace tank
