@@ -11,20 +11,20 @@ InputManager::InputManager() {
 void InputManager::initializeKeyMappings() {
     // Player 1: WASD + Space
     playerMappings_[0] = {
-        SDLK_w,      // up
-        SDLK_s,      // down
-        SDLK_a,      // left
-        SDLK_d,      // right
-        SDLK_SPACE   // fire
+        SDL_SCANCODE_W,      // up
+        SDL_SCANCODE_S,      // down
+        SDL_SCANCODE_A,      // left
+        SDL_SCANCODE_D,      // right
+        SDL_SCANCODE_SPACE   // fire
     };
 
-    // Player 2: Arrow keys + Numpad 0
+    // Player 2: Arrow keys + Enter
     playerMappings_[1] = {
-        SDLK_UP,     // up
-        SDLK_DOWN,   // down
-        SDLK_LEFT,   // left
-        SDLK_RIGHT,  // right
-        SDLK_KP_0    // fire (numpad 0)
+        SDL_SCANCODE_UP,      // up
+        SDL_SCANCODE_DOWN,    // down
+        SDL_SCANCODE_LEFT,    // left
+        SDL_SCANCODE_RIGHT,   // right
+        SDL_SCANCODE_RETURN   // fire
     };
 }
 
@@ -40,6 +40,9 @@ void InputManager::processEvents() {
                 break;
 
             case SDL_KEYDOWN:
+                if (event.key.keysym.scancode < SDL_NUM_SCANCODES) {
+                    currentKeys_[event.key.keysym.scancode] = true;
+                }
                 if (!event.key.repeat) {
                     inputEvent.type = InputEvent::Type::KeyDown;
                     inputEvent.keycode = event.key.keysym.sym;
@@ -47,8 +50,18 @@ void InputManager::processEvents() {
                 break;
 
             case SDL_KEYUP:
+                if (event.key.keysym.scancode < SDL_NUM_SCANCODES) {
+                    currentKeys_[event.key.keysym.scancode] = false;
+                }
                 inputEvent.type = InputEvent::Type::KeyUp;
                 inputEvent.keycode = event.key.keysym.sym;
+                break;
+
+            case SDL_WINDOWEVENT:
+                if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST ||
+                    event.window.event == SDL_WINDOWEVENT_HIDDEN) {
+                    currentKeys_.fill(false);
+                }
                 break;
 
             case SDL_MOUSEBUTTONDOWN:
@@ -75,16 +88,6 @@ void InputManager::processEvents() {
         if (inputEvent.type != InputEvent::Type::None && eventCallback_) {
             eventCallback_(inputEvent);
         }
-    }
-
-    // SDL_PumpEvents is called by SDL_PollEvent, but call it explicitly to ensure
-    // keyboard state is updated before SDL_GetKeyboardState
-    SDL_PumpEvents();
-
-    // Use SDL_GetKeyboardState for reliable real-time key detection
-    const Uint8* keyState = SDL_GetKeyboardState(nullptr);
-    for (int i = 0; i < SDL_NUM_SCANCODES; ++i) {
-        currentKeys_[i] = keyState[i] != 0;
     }
 }
 
@@ -136,23 +139,25 @@ bool InputManager::isKeyPressed(SDL_Scancode scancode) const {
 
 InputManager::PlayerInput InputManager::getPlayer1Input() const {
     PlayerInput input;
-    // Use scancodes directly for reliable input detection
-    input.up = isKeyDown(SDL_SCANCODE_W);
-    input.down = isKeyDown(SDL_SCANCODE_S);
-    input.left = isKeyDown(SDL_SCANCODE_A);
-    input.right = isKeyDown(SDL_SCANCODE_D);
-    input.fire = isKeyDown(SDL_SCANCODE_SPACE);
+
+    const KeyMapping& mapping = playerMappings_[0];
+    input.up = isKeyDown(mapping.up);
+    input.down = isKeyDown(mapping.down);
+    input.left = isKeyDown(mapping.left);
+    input.right = isKeyDown(mapping.right);
+    input.fire = isKeyDown(mapping.fire);
+
     return input;
 }
 
 InputManager::PlayerInput InputManager::getPlayer2Input() const {
     PlayerInput input;
-    // Use scancodes directly for reliable input detection
-    input.up = isKeyDown(SDL_SCANCODE_UP);
-    input.down = isKeyDown(SDL_SCANCODE_DOWN);
-    input.left = isKeyDown(SDL_SCANCODE_LEFT);
-    input.right = isKeyDown(SDL_SCANCODE_RIGHT);
-    input.fire = isKeyDown(SDL_SCANCODE_KP_0) || isKeyDown(SDL_SCANCODE_RCTRL);
+    const KeyMapping& mapping = playerMappings_[1];
+    input.up = isKeyDown(mapping.up);
+    input.down = isKeyDown(mapping.down);
+    input.left = isKeyDown(mapping.left);
+    input.right = isKeyDown(mapping.right);
+    input.fire = isKeyDown(mapping.fire) || isKeyDown(SDL_SCANCODE_KP_ENTER) || isKeyDown(SDL_SCANCODE_RCTRL);
     return input;
 }
 

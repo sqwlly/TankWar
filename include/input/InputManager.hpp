@@ -32,11 +32,11 @@ struct InputEvent {
  * @brief Key mapping for a player
  */
 struct KeyMapping {
-    SDL_Keycode up;
-    SDL_Keycode down;
-    SDL_Keycode left;
-    SDL_Keycode right;
-    SDL_Keycode fire;
+    SDL_Scancode up;
+    SDL_Scancode down;
+    SDL_Scancode left;
+    SDL_Scancode right;
+    SDL_Scancode fire;
 };
 
 /**

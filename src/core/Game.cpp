@@ -140,11 +140,11 @@ void Game::run() {
 void Game::processInput() {
     inputManager_->processEvents();
     stateManager_.handleInput(*inputManager_);
+    inputManager_->update();
 }
 
 void Game::update(float deltaTime) {
     stateManager_.update(deltaTime);
-    inputManager_->update();
 }
 
 void Game::render() {

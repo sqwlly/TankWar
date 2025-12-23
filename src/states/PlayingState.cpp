@@ -345,26 +345,13 @@ void PlayingState::handleInput(const InputManager& input) {
 
 void PlayingState::handlePlayer1Input(const InputManager& input) {
     if (!player1_) {
-        std::cout << "[Input] player1_ is null" << std::endl;
         return;
     }
     if (!player1_->isAlive()) {
-        std::cout << "[Input] player1_ is not alive" << std::endl;
         return;
     }
 
     InputManager::PlayerInput p1Input = input.getPlayer1Input();
-
-    // Debug: print input state occasionally
-    static int frameCount = 0;
-    if (++frameCount % 60 == 0) {
-        std::cout << "[Input] Frame " << frameCount
-                  << " WASD=" << p1Input.up << p1Input.left << p1Input.down << p1Input.right
-                  << " Fire=" << p1Input.fire
-                  << " Spawning=" << player1_->isSpawning()
-                  << " Pos=(" << player1_->getPosition().x << "," << player1_->getPosition().y << ")"
-                  << std::endl;
-    }
 
     player1_->handleInput(p1Input);
 }
