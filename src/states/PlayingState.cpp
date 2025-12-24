@@ -5,7 +5,9 @@
 #include "collision/handlers/TankTerrainHandler.hpp"
 #include "collision/handlers/TankTankHandler.hpp"
 #include "collision/handlers/BulletBulletHandler.hpp"
-#include "input/InputManager.hpp"
+#include "input/IInput.hpp"
+#include "input/PlayerInput.hpp"
+#include "level/EnemyWaveGenerator.hpp"
 #include "graphics/SpriteSheet.hpp"
 #include "utils/DamageCalculator.hpp"
 #include "ai/AIBehavior.hpp"
@@ -16,10 +18,34 @@ namespace tank {
 // Convert ms to seconds for spawn interval
 constexpr float SPAWN_INTERVAL_SECONDS = Constants::ENEMY_SPAWN_INTERVAL / 1000.0f;
 
-PlayingState::PlayingState(GameStateManager& manager, int levelNumber, bool twoPlayer)
+namespace {
+PlayerInput readPlayer1Input(const IInput& input) {
+    PlayerInput playerInput;
+    playerInput.up = input.isKeyDown(SDL_SCANCODE_W);
+    playerInput.down = input.isKeyDown(SDL_SCANCODE_S);
+    playerInput.left = input.isKeyDown(SDL_SCANCODE_A);
+    playerInput.right = input.isKeyDown(SDL_SCANCODE_D);
+    playerInput.fire = input.isKeyDown(SDL_SCANCODE_SPACE);
+    return playerInput;
+}
+
+PlayerInput readPlayer2Input(const IInput& input) {
+    PlayerInput playerInput;
+    playerInput.up = input.isKeyDown(SDL_SCANCODE_UP);
+    playerInput.down = input.isKeyDown(SDL_SCANCODE_DOWN);
+    playerInput.left = input.isKeyDown(SDL_SCANCODE_LEFT);
+    playerInput.right = input.isKeyDown(SDL_SCANCODE_RIGHT);
+    playerInput.fire = input.isKeyDown(SDL_SCANCODE_RETURN) || input.isKeyDown(SDL_SCANCODE_KP_ENTER) ||
+                       input.isKeyDown(SDL_SCANCODE_RCTRL);
+    return playerInput;
+}
+} // namespace
+
+PlayingState::PlayingState(GameStateManager& manager, int levelNumber, bool twoPlayer, bool useWaveGenerator)
     : stateManager_(manager)
     , currentLevel_(levelNumber)
     , twoPlayerMode_(twoPlayer)
+    , useWaveGenerator_(useWaveGenerator)
     , levelFilePath_()
     , paused_(false)
     , gameOver_(false)
@@ -40,8 +66,8 @@ PlayingState::PlayingState(GameStateManager& manager, int levelNumber, bool twoP
     hud_.setCurrentLevel(currentLevel_);
 }
 
-PlayingState::PlayingState(GameStateManager& manager, int levelNumber, bool twoPlayer, const std::string& levelFilePath)
-    : PlayingState(manager, levelNumber, twoPlayer)
+PlayingState::PlayingState(GameStateManager& manager, int levelNumber, bool twoPlayer, const std::string& levelFilePath, bool useWaveGenerator)
+    : PlayingState(manager, levelNumber, twoPlayer, useWaveGenerator)
 {
     levelFilePath_ = levelFilePath;
 }
@@ -70,6 +96,10 @@ void PlayingState::loadLevel() {
     if (!level_) {
         // Create default level if load fails
         level_ = std::make_unique<Level>(currentLevel_);
+    }
+
+    if (useWaveGenerator_) {
+        EnemyWaveGenerator::applyToLevel(*level_, currentLevel_);
     }
 
     enemiesSpawned_ = 0;
@@ -223,13 +253,26 @@ void PlayingState::checkCollisions() {
     for (auto& bullet : bullets_) {
         if (!bullet->isAlive()) continue;
 
+        const Rectangle bulletBounds = bullet->getBounds();
         for (auto& terrain : terrains_) {
             if (terrain->isBulletPassable()) continue;
             if (terrain->isDestroyed()) continue;
 
             // ITerrain provides getBounds() directly
-            if (CollisionManager::checkAABB(bullet->getBounds(), terrain->getBounds())) {
-                terrain->takeDamage(bullet->getAttack(), bullet->getBounds());
+            if (auto* brick = dynamic_cast<BrickWall*>(terrain.get())) {
+                if (!brick->intersectsSolid(bulletBounds)) {
+                    continue;
+                }
+                brick->takeDamage(bullet->getAttack(), bulletBounds);
+                bullet->hit();
+                bullet->die();
+                break;
+            }
+            if (auto* steel = dynamic_cast<SteelWall*>(terrain.get())) {
+                steel->setDestructible(bullet->getLevel() >= 3);
+            }
+            if (CollisionManager::checkAABB(bulletBounds, terrain->getBounds())) {
+                terrain->takeDamage(bullet->getAttack(), bulletBounds);
                 bullet->hit();
                 bullet->die();
                 break;
@@ -342,24 +385,40 @@ void PlayingState::checkGameState() {
     }
 
     // Check level complete
-    if (enemiesAlive_ == 0 && enemiesSpawned_ >= static_cast<int>(level_->getEnemySpawnList().size())) {
+    if (!levelComplete_ &&
+        enemiesAlive_ == 0 &&
+        enemiesSpawned_ >= static_cast<int>(level_->getEnemySpawnList().size())) {
         levelComplete_ = true;
-        // Transition to next level or victory screen
+
+        int nextLevel = currentLevel_ + 1;
+        if (nextLevel > LevelLoader::getTotalLevels()) {
+            nextLevel = 1;
+        }
+
+        stateManager_.changeToStage(nextLevel, twoPlayerMode_);
     }
 }
 
-void PlayingState::handleInput(const InputManager& input) {
+void PlayingState::handleInput(const IInput& input) {
     if (!levelFilePath_.empty() && input.isKeyPressed(SDL_SCANCODE_F6)) {
         stateManager_.popState();
         return;
     }
 
-    if (input.isKeyPressed(SDL_SCANCODE_ESCAPE)) {
-        paused_ = !paused_;
-        pauseOverlay_.setActive(paused_);
+    if (gameOver_) {
+        handleGameOverMenuInput(input);
+        return;
     }
 
-    if (paused_) return;
+    if (paused_) {
+        handlePauseMenuInput(input);
+        return;
+    }
+
+    if (input.isKeyPressed(SDL_SCANCODE_ESCAPE)) {
+        openPauseMenu();
+        return;
+    }
 
     handlePlayer1Input(input);
     if (twoPlayerMode_) {
@@ -367,7 +426,95 @@ void PlayingState::handleInput(const InputManager& input) {
     }
 }
 
-void PlayingState::handlePlayer1Input(const InputManager& input) {
+void PlayingState::openPauseMenu() {
+    paused_ = true;
+    pauseOverlay_.setActive(true);
+    pauseOverlay_.resetSelection();
+}
+
+void PlayingState::resumeFromPause() {
+    paused_ = false;
+    pauseOverlay_.setActive(false);
+}
+
+void PlayingState::restartLevel() {
+    if (!levelFilePath_.empty()) {
+        stateManager_.changeState(
+            std::make_unique<PlayingState>(stateManager_, currentLevel_, twoPlayerMode_, levelFilePath_, useWaveGenerator_));
+        return;
+    }
+
+    stateManager_.changeState(std::make_unique<PlayingState>(stateManager_, currentLevel_, twoPlayerMode_, useWaveGenerator_));
+}
+
+void PlayingState::handlePauseMenuInput(const IInput& input) {
+    if (input.isKeyPressed(SDL_SCANCODE_ESCAPE)) {
+        resumeFromPause();
+        return;
+    }
+
+    if (input.isKeyPressed(SDL_SCANCODE_UP) || input.isKeyPressed(SDL_SCANCODE_W)) {
+        pauseOverlay_.selectPreviousItem();
+    } else if (input.isKeyPressed(SDL_SCANCODE_DOWN) || input.isKeyPressed(SDL_SCANCODE_S)) {
+        pauseOverlay_.selectNextItem();
+    }
+
+    if (input.isKeyPressed(SDL_SCANCODE_R)) {
+        restartLevel();
+        return;
+    }
+    if (input.isKeyPressed(SDL_SCANCODE_M)) {
+        stateManager_.changeToMenu();
+        return;
+    }
+
+    if (input.isKeyPressed(SDL_SCANCODE_RETURN) || input.isKeyPressed(SDL_SCANCODE_SPACE)) {
+        switch (pauseOverlay_.getSelectedItem()) {
+            case PauseOverlay::MenuItem::Continue:
+                resumeFromPause();
+                break;
+            case PauseOverlay::MenuItem::Restart:
+                restartLevel();
+                break;
+            case PauseOverlay::MenuItem::MainMenu:
+                stateManager_.changeToMenu();
+                break;
+        }
+    }
+}
+
+void PlayingState::handleGameOverMenuInput(const IInput& input) {
+    if (input.isKeyPressed(SDL_SCANCODE_ESCAPE) || input.isKeyPressed(SDL_SCANCODE_M)) {
+        gameOverOverlay_.setSelectedItem(GameOverOverlay::MenuItem::MainMenu);
+        stateManager_.changeToMenu();
+        return;
+    }
+
+    if (input.isKeyPressed(SDL_SCANCODE_UP) || input.isKeyPressed(SDL_SCANCODE_W)) {
+        gameOverOverlay_.selectPreviousItem();
+    } else if (input.isKeyPressed(SDL_SCANCODE_DOWN) || input.isKeyPressed(SDL_SCANCODE_S)) {
+        gameOverOverlay_.selectNextItem();
+    }
+
+    if (input.isKeyPressed(SDL_SCANCODE_R)) {
+        gameOverOverlay_.setSelectedItem(GameOverOverlay::MenuItem::Restart);
+        restartLevel();
+        return;
+    }
+
+    if (input.isKeyPressed(SDL_SCANCODE_RETURN) || input.isKeyPressed(SDL_SCANCODE_SPACE)) {
+        switch (gameOverOverlay_.getSelectedItem()) {
+            case GameOverOverlay::MenuItem::Restart:
+                restartLevel();
+                break;
+            case GameOverOverlay::MenuItem::MainMenu:
+                stateManager_.changeToMenu();
+                break;
+        }
+    }
+}
+
+void PlayingState::handlePlayer1Input(const IInput& input) {
     if (!player1_) {
         return;
     }
@@ -375,16 +522,13 @@ void PlayingState::handlePlayer1Input(const InputManager& input) {
         return;
     }
 
-    InputManager::PlayerInput p1Input = input.getPlayer1Input();
-
-    player1_->handleInput(p1Input);
+    player1_->handleInput(readPlayer1Input(input));
 }
 
-void PlayingState::handlePlayer2Input(const InputManager& input) {
+void PlayingState::handlePlayer2Input(const IInput& input) {
     if (!player2_ || !player2_->isAlive()) return;
 
-    InputManager::PlayerInput p2Input = input.getPlayer2Input();
-    player2_->handleInput(p2Input);
+    player2_->handleInput(readPlayer2Input(input));
 }
 
 void PlayingState::render(IRenderer& renderer) {
@@ -481,7 +625,7 @@ void PlayingState::handleTankShooting(Tank& tank) {
 
 Vector2 PlayingState::calculateBulletSpawnPosition(const Tank& tank) const {
     Rectangle bounds = tank.getBounds();
-    float bulletSize = static_cast<float>(Sprites::BULLET_SIZE);
+    float bulletSize = static_cast<float>(Sprites::Bullet::SIZE);
     float spawnX = bounds.x + (bounds.width / 2.0f) - (bulletSize / 2.0f);
     float spawnY = bounds.y + (bounds.height / 2.0f) - (bulletSize / 2.0f);
 
@@ -652,6 +796,13 @@ void PlayingState::checkTankTerrainCollisions() {
             if (terrain->isTankPassable()) continue;
             if (terrain->isDestroyed()) continue;
 
+            if (auto* brick = dynamic_cast<BrickWall*>(terrain.get())) {
+                if (!brick->intersectsSolid(tankBounds)) {
+                    continue;
+                }
+                tank->stay();
+                break;
+            }
             if (CollisionManager::checkAABB(tankBounds, terrain->getBounds())) {
                 tank->stay();
                 break;

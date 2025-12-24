@@ -1,7 +1,7 @@
 #include "states/ConstructionState.hpp"
 #include "states/GameStateManager.hpp"
 #include "states/PlayingState.hpp"
-#include "input/InputManager.hpp"
+#include "input/IInput.hpp"
 #include "utils/Vector2.hpp"
 #include <algorithm>
 
@@ -94,7 +94,7 @@ void ConstructionState::render(IRenderer& renderer) {
     renderSidebar(renderer);
 }
 
-void ConstructionState::handleInput(const InputManager& input) {
+void ConstructionState::handleInput(const IInput& input) {
     const bool largeBrush = input.isKeyDown(SDL_SCANCODE_LSHIFT) || input.isKeyDown(SDL_SCANCODE_RSHIFT);
 
     updateHoverFromMouse(input);
@@ -303,7 +303,7 @@ void ConstructionState::eraseAtCursor(bool largeBrush) {
     dirty_ = true;
 }
 
-void ConstructionState::updateHoverFromMouse(const InputManager& input) {
+void ConstructionState::updateHoverFromMouse(const IInput& input) {
     hoverX_ = -1;
     hoverY_ = -1;
 
@@ -316,7 +316,7 @@ void ConstructionState::updateHoverFromMouse(const InputManager& input) {
     hoverY_ = std::clamp(my / Constants::CELL_SIZE, 0, Constants::GRID_HEIGHT - 1);
 }
 
-void ConstructionState::handleMousePaint(const InputManager& input, bool largeBrush) {
+void ConstructionState::handleMousePaint(const IInput& input, bool largeBrush) {
     if (mode_ != EditorMode::Terrain) return;
     if (!level_) return;
     if (hoverX_ < 0 || hoverY_ < 0) return;

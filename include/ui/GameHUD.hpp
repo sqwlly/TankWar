@@ -57,11 +57,23 @@ public:
     void start();
     bool isAnimationComplete() const { return animationComplete_; }
 
+    enum class MenuItem {
+        Restart = 0,
+        MainMenu = 1
+    };
+
+    void resetSelection();
+    void selectNextItem();
+    void selectPreviousItem();
+    void setSelectedItem(MenuItem item) { selectedItem_ = item; }
+    MenuItem getSelectedItem() const { return selectedItem_; }
+
 private:
     bool active_;
     bool animationComplete_;
     float animationProgress_;
     int textY_;
+    MenuItem selectedItem_ = MenuItem::Restart;
 
     static constexpr float ANIMATION_SPEED = 100.0f;  // Pixels per second
     static constexpr int START_Y = Constants::WINDOW_HEIGHT;
@@ -73,14 +85,27 @@ private:
  */
 class PauseOverlay {
 public:
+    enum class MenuItem {
+        Continue = 0,
+        Restart = 1,
+        MainMenu = 2
+    };
+
     PauseOverlay() : active_(false) {}
 
     void render(IRenderer& renderer);
     void setActive(bool active) { active_ = active; }
     bool isActive() const { return active_; }
 
+    void resetSelection();
+    void selectNextItem();
+    void selectPreviousItem();
+    void setSelectedItem(MenuItem item) { selectedItem_ = item; }
+    MenuItem getSelectedItem() const { return selectedItem_; }
+
 private:
     bool active_;
+    MenuItem selectedItem_ = MenuItem::Continue;
 };
 
 } // namespace tank

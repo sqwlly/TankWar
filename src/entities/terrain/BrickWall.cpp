@@ -48,6 +48,15 @@ bool BrickWall::isDestroyed() const {
                         [](bool alive) { return alive; });
 }
 
+bool BrickWall::intersectsSolid(const Rectangle& box) const {
+    for (int i = 0; i < 4; ++i) {
+        if (cornerStates_[i] && corners_[i].intersects(box)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int BrickWall::getSpriteIndex() const {
     // Convert corner states to sprite index
     // Matches original Java Tile.diversity() mapping
@@ -80,8 +89,8 @@ void BrickWall::onRender(IRenderer& renderer) {
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
 
-    // Java renders at ELEMENT_SIZE to match sprite exactly
-    int destSize = Sprites::ELEMENT_SIZE;
+    // Render at tile size to match collision bounds
+    int destSize = static_cast<int>(width_);
 
     renderer.drawSprite(srcX, srcY, Sprites::ELEMENT_SIZE, Sprites::ELEMENT_SIZE,
                        destX, destY, destSize, destSize);

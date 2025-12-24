@@ -8,7 +8,6 @@
 namespace tank {
 
 class GameStateManager;
-class InputManager;
 
 /**
  * @brief Construction mode - a simple level editor
@@ -23,7 +22,7 @@ public:
 
     void update(float deltaTime) override;
     void render(IRenderer& renderer) override;
-    void handleInput(const InputManager& input) override;
+    void handleInput(const IInput& input) override;
 
     StateType getType() const override { return StateType::Construction; }
 
@@ -76,8 +75,8 @@ private:
     void moveCursor(int dx, int dy);
     void paintAtCursor(bool largeBrush);
     void eraseAtCursor(bool largeBrush);
-    void updateHoverFromMouse(const InputManager& input);
-    void handleMousePaint(const InputManager& input, bool largeBrush);
+    void updateHoverFromMouse(const IInput& input);
+    void handleMousePaint(const IInput& input, bool largeBrush);
 
     bool saveToCustomFile();
     bool overwriteCurrentLevelFile();

@@ -9,7 +9,7 @@
 
 #include "states/GameStateManager.hpp"
 #include "entities/projectiles/Bullet.hpp"
-#include "input/InputManager.hpp"
+#include "mocks/ScriptedInput.hpp"
 
 namespace tank {
 namespace test {
@@ -31,9 +31,9 @@ TEST_F(BulletBehaviorTest, PlayerFireShouldCreateBulletInPlayingState) {
 
     state.player1_->update(1.0f);  // finish spawn animation
 
-    InputManager::PlayerInput fireInput;
-    fireInput.fire = true;
-    state.player1_->handleInput(fireInput);
+    ScriptedInput input;
+    input.setKeyDown(SDL_SCANCODE_SPACE, true);
+    state.handleInput(input);
     state.updateEntities(kDelta);
 
     EXPECT_FALSE(state.bullets_.empty())

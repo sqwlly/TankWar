@@ -26,21 +26,21 @@ class GameStateManager;
  */
 class PlayingState : public IGameState {
 public:
-    explicit PlayingState(GameStateManager& manager, int levelNumber = 1, bool twoPlayer = false);
-    PlayingState(GameStateManager& manager, int levelNumber, bool twoPlayer, const std::string& levelFilePath);
+    explicit PlayingState(GameStateManager& manager, int levelNumber = 1, bool twoPlayer = false, bool useWaveGenerator = false);
+    PlayingState(GameStateManager& manager, int levelNumber, bool twoPlayer, const std::string& levelFilePath, bool useWaveGenerator = false);
     ~PlayingState() override = default;
 
     void enter() override;
     void exit() override;
     void update(float deltaTime) override;
     void render(IRenderer& renderer) override;
-    void handleInput(const InputManager& input) override;
+    void handleInput(const IInput& input) override;
 
     StateType getType() const override { return StateType::Playing; }
 
     // Game control
-    void pauseGame() { paused_ = true; }
-    void resumeGame() { paused_ = false; }
+    void pauseGame() { paused_ = true; pauseOverlay_.setActive(true); pauseOverlay_.resetSelection(); }
+    void resumeGame() { paused_ = false; pauseOverlay_.setActive(false); }
     bool isPaused() const { return paused_; }
 
     // Level management
@@ -57,6 +57,7 @@ private:
     // Level data
     int currentLevel_;
     bool twoPlayerMode_;
+    bool useWaveGenerator_;
     std::string levelFilePath_;
     std::unique_ptr<Level> level_;
     LevelLoader levelLoader_;
@@ -105,8 +106,14 @@ private:
     void removeDeadEntities();
     void checkGameState();
 
-    void handlePlayer1Input(const InputManager& input);
-    void handlePlayer2Input(const InputManager& input);
+    void handlePlayer1Input(const IInput& input);
+    void handlePlayer2Input(const IInput& input);
+
+    void openPauseMenu();
+    void resumeFromPause();
+    void restartLevel();
+    void handlePauseMenuInput(const IInput& input);
+    void handleGameOverMenuInput(const IInput& input);
 
     void renderTerrain(IRenderer& renderer);
     void renderEntities(IRenderer& renderer);

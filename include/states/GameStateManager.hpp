@@ -6,7 +6,7 @@
 
 namespace tank {
 
-class InputManager;
+class IInput;
 
 /**
  * @brief Manages game states with stack-based navigation
@@ -24,7 +24,7 @@ public:
 
     // Convenience methods for state transitions
     void changeToMenu();
-    void changeToStage(int levelNumber);
+    void changeToStage(int levelNumber, bool twoPlayer = false);
     void changeToPlaying(int levelNumber, bool twoPlayer);
     void changeToScore(int levelNumber, bool victory);
     void changeToConstruction(int levelNumber = 1);
@@ -32,7 +32,7 @@ public:
     // Update and render
     void update(float deltaTime);
     void render(IRenderer& renderer);
-    void handleInput(const InputManager& input);
+    void handleInput(const IInput& input);
 
     // Access current state
     IGameState* getCurrentState();

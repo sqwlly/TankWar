@@ -20,7 +20,7 @@ public:
 
     void update(float deltaTime) override;
     void render(IRenderer& renderer) override;
-    void handleInput(const InputManager& input) override;
+    void handleInput(const IInput& input) override;
 
     StateType getType() const override { return StateType::Menu; }
 
@@ -28,19 +28,15 @@ private:
     GameStateManager& stateManager_;
 
     enum class MenuItem {
-        SinglePlayer = 0,
-        TwoPlayers = 1,
-        Construction = 2
+        Campaign = 0,
+        Survival = 1
     };
 
-    MenuItem selectedItem_ = MenuItem::SinglePlayer;
+    static constexpr int MENU_ITEM_COUNT = 2;
+
+    MenuItem selectedItem_ = MenuItem::Campaign;
     float cursorBlinkTimer_ = 0.0f;
     bool cursorVisible_ = true;
-
-    // Input handling
-    bool upPressed_ = false;
-    bool downPressed_ = false;
-    bool confirmPressed_ = false;
 
     // Menu positions
     static constexpr int MENU_START_Y = 280;

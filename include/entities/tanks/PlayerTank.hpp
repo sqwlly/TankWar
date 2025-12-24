@@ -1,7 +1,7 @@
 #pragma once
 
 #include "entities/tanks/Tank.hpp"
-#include "input/InputManager.hpp"
+#include "input/PlayerInput.hpp"
 
 namespace tank {
 
@@ -31,7 +31,7 @@ public:
     void resetLevel() { level_ = 0; }
 
     // Input handling
-    void handleInput(const InputManager::PlayerInput& input);
+    void handleInput(const PlayerInput& input);
 
 protected:
     void onUpdate(float deltaTime) override;

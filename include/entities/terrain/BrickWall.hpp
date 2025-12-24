@@ -21,6 +21,7 @@ public:
     // Corner state
     bool isCornerAlive(int index) const { return cornerStates_[index]; }
     Rectangle getCornerBounds(int index) const { return corners_[index]; }
+    bool intersectsSolid(const Rectangle& box) const;
     int getSpriteIndex() const;
 
 protected:

@@ -1,7 +1,7 @@
 #include "states/ScoreState.hpp"
 #include "states/GameStateManager.hpp"
 #include "rendering/IRenderer.hpp"
-#include "input/InputManager.hpp"
+#include "input/IInput.hpp"
 #include "utils/Constants.hpp"
 
 namespace tank {
@@ -155,7 +155,7 @@ void ScoreState::renderRow(IRenderer& renderer, int row, int y) {
                      tankColor.r, tankColor.g, tankColor.b, 255);
 }
 
-void ScoreState::handleInput(const InputManager& input) {
+void ScoreState::handleInput(const IInput& input) {
     if (animationComplete_) {
         if (input.isKeyPressed(SDL_SCANCODE_RETURN) || input.isKeyPressed(SDL_SCANCODE_SPACE)) {
             if (victory_) {

@@ -14,7 +14,7 @@ PlayerTank::PlayerTank(int playerId, const Vector2& spawnPosition)
     makeInvincible(Constants::INVINCIBLE_DURATION / 1000.0f);
 }
 
-void PlayerTank::handleInput(const InputManager::PlayerInput& input) {
+void PlayerTank::handleInput(const PlayerInput& input) {
     if (spawning_) {
         return;
     }

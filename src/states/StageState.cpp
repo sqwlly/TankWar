@@ -1,14 +1,15 @@
 #include "states/StageState.hpp"
 #include "states/GameStateManager.hpp"
 #include "rendering/IRenderer.hpp"
-#include "input/InputManager.hpp"
+#include "input/IInput.hpp"
 #include "utils/Constants.hpp"
 
 namespace tank {
 
-StageState::StageState(GameStateManager& manager, int levelNumber)
+StageState::StageState(GameStateManager& manager, int levelNumber, bool twoPlayer)
     : stateManager_(manager)
     , levelNumber_(levelNumber)
+    , twoPlayerMode_(twoPlayer)
     , displayTime_(0.0f)
     , waitingForInput_(false)
 {
@@ -28,7 +29,7 @@ void StageState::update(float deltaTime) {
 
     // After display duration, transition to playing state
     if (displayTime_ >= DISPLAY_DURATION && !waitingForInput_) {
-        stateManager_.changeToPlaying(levelNumber_, false);
+        stateManager_.changeToPlaying(levelNumber_, twoPlayerMode_);
     }
 }
 
@@ -57,10 +58,10 @@ void StageState::render(IRenderer& renderer) {
     );
 }
 
-void StageState::handleInput(const InputManager& input) {
+void StageState::handleInput(const IInput& input) {
     // Allow skipping with Enter or Space
     if (input.isKeyPressed(SDL_SCANCODE_RETURN) || input.isKeyPressed(SDL_SCANCODE_SPACE)) {
-        stateManager_.changeToPlaying(levelNumber_, false);
+        stateManager_.changeToPlaying(levelNumber_, twoPlayerMode_);
     }
 }
 

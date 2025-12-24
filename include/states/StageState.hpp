@@ -11,20 +11,21 @@ class GameStateManager;
  */
 class StageState : public IGameState {
 public:
-    StageState(GameStateManager& manager, int levelNumber);
+    StageState(GameStateManager& manager, int levelNumber, bool twoPlayer = false);
     ~StageState() override = default;
 
     void enter() override;
     void exit() override;
     void update(float deltaTime) override;
     void render(IRenderer& renderer) override;
-    void handleInput(const InputManager& input) override;
+    void handleInput(const IInput& input) override;
 
     StateType getType() const override { return StateType::Stage; }
 
 private:
     GameStateManager& stateManager_;
     int levelNumber_;
+    bool twoPlayerMode_;
     float displayTime_;
     bool waitingForInput_;
 

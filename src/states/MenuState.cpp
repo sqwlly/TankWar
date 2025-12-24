@@ -1,6 +1,6 @@
 #include "states/MenuState.hpp"
 #include "states/GameStateManager.hpp"
-#include "input/InputManager.hpp"
+#include "input/IInput.hpp"
 #include <iostream>
 
 namespace tank {
@@ -12,12 +12,9 @@ MenuState::MenuState(GameStateManager& manager)
 
 void MenuState::enter() {
     std::cout << "Entering Menu State" << std::endl;
-    selectedItem_ = MenuItem::SinglePlayer;
+    selectedItem_ = MenuItem::Campaign;
     cursorBlinkTimer_ = 0.0f;
     cursorVisible_ = true;
-    upPressed_ = false;
-    downPressed_ = false;
-    confirmPressed_ = false;
 }
 
 void MenuState::exit() {
@@ -45,38 +42,41 @@ void MenuState::render(IRenderer& renderer) {
     }
 }
 
-void MenuState::handleInput(const InputManager& input) {
-    // Handle up navigation
-    bool upNow = input.isKeyDown(SDL_SCANCODE_UP) || input.isKeyDown(SDL_SCANCODE_W);
-    if (upNow && !upPressed_) {
-        selectPreviousItem();
+void MenuState::handleInput(const IInput& input) {
+    // Direct mode selection via number keys
+    if (input.isKeyPressed(SDL_SCANCODE_1)) {
+        selectedItem_ = MenuItem::Campaign;
+        confirmSelection();
+        return;
     }
-    upPressed_ = upNow;
+    if (input.isKeyPressed(SDL_SCANCODE_2)) {
+        selectedItem_ = MenuItem::Survival;
+        confirmSelection();
+        return;
+    }
 
-    // Handle down navigation
-    bool downNow = input.isKeyDown(SDL_SCANCODE_DOWN) || input.isKeyDown(SDL_SCANCODE_S);
-    if (downNow && !downPressed_) {
+    // Navigate
+    if (input.isKeyPressed(SDL_SCANCODE_UP) || input.isKeyPressed(SDL_SCANCODE_W)) {
+        selectPreviousItem();
+    } else if (input.isKeyPressed(SDL_SCANCODE_DOWN) || input.isKeyPressed(SDL_SCANCODE_S)) {
         selectNextItem();
     }
-    downPressed_ = downNow;
 
-    // Handle confirm
-    bool confirmNow = input.isKeyDown(SDL_SCANCODE_RETURN) || input.isKeyDown(SDL_SCANCODE_SPACE);
-    if (confirmNow && !confirmPressed_) {
+    // Confirm
+    if (input.isKeyPressed(SDL_SCANCODE_RETURN) || input.isKeyPressed(SDL_SCANCODE_SPACE)) {
         confirmSelection();
     }
-    confirmPressed_ = confirmNow;
 }
 
 void MenuState::selectNextItem() {
     int current = static_cast<int>(selectedItem_);
-    current = (current + 1) % 3;
+    current = (current + 1) % MENU_ITEM_COUNT;
     selectedItem_ = static_cast<MenuItem>(current);
 }
 
 void MenuState::selectPreviousItem() {
     int current = static_cast<int>(selectedItem_);
-    current = (current - 1 + 3) % 3;
+    current = (current - 1 + MENU_ITEM_COUNT) % MENU_ITEM_COUNT;
     selectedItem_ = static_cast<MenuItem>(current);
 }
 
@@ -84,17 +84,12 @@ void MenuState::confirmSelection() {
     std::cout << "Selected menu item: " << static_cast<int>(selectedItem_) << std::endl;
 
     switch (selectedItem_) {
-        case MenuItem::SinglePlayer:
+        case MenuItem::Campaign:
             stateManager_.changeToStage(1);
             break;
 
-        case MenuItem::TwoPlayers:
-            // Start two player game (stage 1, two player mode)
-            stateManager_.changeToPlaying(1, true);
-            break;
-
-        case MenuItem::Construction:
-            stateManager_.changeToConstruction(1);
+        case MenuItem::Survival:
+            stateManager_.changeToPlaying(1, /*twoPlayer=*/false);
             break;
     }
 }
@@ -107,12 +102,11 @@ void MenuState::renderTitle(IRenderer& renderer) {
 
 void MenuState::renderMenuItems(IRenderer& renderer) {
     const char* items[] = {
-        "1 PLAYER",
-        "2 PLAYERS",
-        "CONSTRUCTION"
+        "1 \xE6\x88\x98\xE5\xBD\xB9",
+        "2 \xE6\x97\xA0\xE5\xB0\xBD"
     };
 
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < MENU_ITEM_COUNT; ++i) {
         int y = MENU_START_Y + i * MENU_ITEM_HEIGHT;
         renderer.drawText(items[i], Vector2(180, static_cast<float>(y)), Constants::COLOR_WHITE, 20);
     }

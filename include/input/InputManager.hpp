@@ -1,6 +1,8 @@
 #pragma once
 
 #include "utils/Constants.hpp"
+#include "input/IInput.hpp"
+#include "input/PlayerInput.hpp"
 #include <SDL2/SDL.h>
 #include <array>
 #include <functional>
@@ -42,7 +44,7 @@ struct KeyMapping {
 /**
  * @brief Input manager - handles SDL events and keyboard state
  */
-class InputManager {
+class InputManager : public IInput {
 public:
     InputManager();
 
@@ -53,27 +55,18 @@ public:
     bool shouldQuit() const { return quit_; }
 
     // Keyboard state
-    bool isKeyDown(SDL_Keycode key) const;
-    bool isKeyDown(SDL_Scancode scancode) const;  // Scancode version
-    bool isKeyPressed(SDL_Keycode key) const;  // Just pressed this frame
-    bool isKeyPressed(SDL_Scancode scancode) const;  // Scancode version
-    bool isKeyReleased(SDL_Keycode key) const; // Just released this frame
+    bool isKeyDown(SDL_Keycode key) const override;
+    bool isKeyDown(SDL_Scancode scancode) const override;  // Scancode version
+    bool isKeyPressed(SDL_Keycode key) const override;  // Just pressed this frame
+    bool isKeyPressed(SDL_Scancode scancode) const override;  // Scancode version
+    bool isKeyReleased(SDL_Keycode key) const override; // Just released this frame
 
     // Mouse state
-    int getMouseX() const { return mouseX_; }
-    int getMouseY() const { return mouseY_; }
-    bool isMouseButtonDown(uint8_t button) const;
-    bool isMouseButtonPressed(uint8_t button) const;
-    bool isMouseButtonReleased(uint8_t button) const;
-
-    // Player input (simplified struct)
-    struct PlayerInput {
-        bool up = false;
-        bool down = false;
-        bool left = false;
-        bool right = false;
-        bool fire = false;
-    };
+    int getMouseX() const override { return mouseX_; }
+    int getMouseY() const override { return mouseY_; }
+    bool isMouseButtonDown(uint8_t button) const override;
+    bool isMouseButtonPressed(uint8_t button) const override;
+    bool isMouseButtonReleased(uint8_t button) const override;
 
     PlayerInput getPlayer1Input() const;
     PlayerInput getPlayer2Input() const;

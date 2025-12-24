@@ -184,20 +184,20 @@ bool InputManager::isMouseButtonReleased(uint8_t button) const {
     return false;
 }
 
-InputManager::PlayerInput InputManager::getPlayer1Input() const {
+PlayerInput InputManager::getPlayer1Input() const {
     PlayerInput input;
 
     const KeyMapping& mapping = playerMappings_[0];
-    input.up = isKeyDown(mapping.up);
-    input.down = isKeyDown(mapping.down);
-    input.left = isKeyDown(mapping.left);
-    input.right = isKeyDown(mapping.right);
-    input.fire = isKeyDown(mapping.fire);
+    input.up = isKeyDown(mapping.up) || isKeyDown(SDLK_w);
+    input.down = isKeyDown(mapping.down) || isKeyDown(SDLK_s);
+    input.left = isKeyDown(mapping.left) || isKeyDown(SDLK_a);
+    input.right = isKeyDown(mapping.right) || isKeyDown(SDLK_d);
+    input.fire = isKeyDown(mapping.fire) || isKeyDown(SDLK_SPACE);
 
     return input;
 }
 
-InputManager::PlayerInput InputManager::getPlayer2Input() const {
+PlayerInput InputManager::getPlayer2Input() const {
     PlayerInput input;
     const KeyMapping& mapping = playerMappings_[1];
     input.up = isKeyDown(mapping.up);

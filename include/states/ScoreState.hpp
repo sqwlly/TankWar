@@ -19,7 +19,7 @@ public:
     void exit() override;
     void update(float deltaTime) override;
     void render(IRenderer& renderer) override;
-    void handleInput(const InputManager& input) override;
+    void handleInput(const IInput& input) override;
 
     StateType getType() const override { return StateType::Score; }
 

@@ -4,7 +4,7 @@
 #include "states/PlayingState.hpp"
 #include "states/ScoreState.hpp"
 #include "states/ConstructionState.hpp"
-#include "input/InputManager.hpp"
+#include "input/IInput.hpp"
 #include <iostream>
 
 namespace tank {
@@ -25,12 +25,12 @@ void GameStateManager::changeToMenu() {
     changeState(std::make_unique<MenuState>(*this));
 }
 
-void GameStateManager::changeToStage(int levelNumber) {
-    changeState(std::make_unique<StageState>(*this, levelNumber));
+void GameStateManager::changeToStage(int levelNumber, bool twoPlayer) {
+    changeState(std::make_unique<StageState>(*this, levelNumber, twoPlayer));
 }
 
 void GameStateManager::changeToPlaying(int levelNumber, bool twoPlayer) {
-    changeState(std::make_unique<PlayingState>(*this, levelNumber, twoPlayer));
+    changeState(std::make_unique<PlayingState>(*this, levelNumber, twoPlayer, /*useWaveGenerator=*/true));
 }
 
 void GameStateManager::changeToScore(int levelNumber, bool victory) {
@@ -85,7 +85,7 @@ void GameStateManager::render(IRenderer& renderer) {
     }
 }
 
-void GameStateManager::handleInput(const InputManager& input) {
+void GameStateManager::handleInput(const IInput& input) {
     if (!states_.empty()) {
         states_.top()->handleInput(input);
     }

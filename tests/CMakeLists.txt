@@ -17,7 +17,7 @@ set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 
 # Collect test source files
-file(GLOB_RECURSE TEST_SOURCES "*.cpp")
+file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "*.cpp")
 
 # Collect necessary source files for testing (excluding main.cpp)
 set(GAME_SOURCES
@@ -40,6 +40,7 @@ set(GAME_SOURCES
     ${SRC_DIR}/collision/handlers/TankTerrainHandler.cpp
     ${SRC_DIR}/level/Level.cpp
     ${SRC_DIR}/level/LevelLoader.cpp
+    ${SRC_DIR}/level/EnemyWaveGenerator.cpp
     ${SRC_DIR}/states/GameStateManager.cpp
     ${SRC_DIR}/states/PlayingState.cpp
     ${SRC_DIR}/states/MenuState.cpp

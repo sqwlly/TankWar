@@ -6,7 +6,7 @@
 namespace tank {
 
 class GameStateManager;
-class InputManager;
+class IInput;
 
 /**
  * @brief Abstract game state interface (State Pattern)
@@ -25,7 +25,7 @@ public:
     virtual void render(IRenderer& renderer) = 0;
 
     // Input handling
-    virtual void handleInput(const InputManager& input) = 0;
+    virtual void handleInput(const IInput& input) = 0;
 
     // State type
     virtual StateType getType() const = 0;

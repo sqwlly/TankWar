@@ -30,8 +30,8 @@ void SteelWall::onRender(IRenderer& renderer) {
     int destX = static_cast<int>(position_.x);
     int destY = static_cast<int>(position_.y);
 
-    // Render at ELEMENT_SIZE to match sprite exactly
-    int destSize = Sprites::ELEMENT_SIZE;
+    // Render at tile size to match collision bounds
+    int destSize = static_cast<int>(width_);
 
     renderer.drawSprite(srcX, srcY, srcSize, srcSize, destX, destY, destSize, destSize);
 }

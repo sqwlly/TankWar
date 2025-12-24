@@ -5,7 +5,7 @@
 namespace tank {
 
 Bullet::Bullet(const Vector2& position, Direction direction, ITank* owner, int level)
-    : Entity(position, Sprites::BULLET_SIZE, Sprites::BULLET_SIZE)
+    : Entity(position, static_cast<float>(Sprites::Bullet::SIZE), static_cast<float>(Sprites::Bullet::SIZE))
     , owner_(owner)
     , direction_(direction)
     , level_(level)
