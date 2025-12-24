@@ -11,7 +11,7 @@ class GameStateManager;
  */
 class StageState : public IGameState {
 public:
-    StageState(GameStateManager& manager, int levelNumber, bool twoPlayer = false);
+    StageState(GameStateManager& manager, int levelNumber, bool twoPlayer = false, bool useWaveGenerator = false);
     ~StageState() override = default;
 
     void enter() override;
@@ -26,6 +26,7 @@ private:
     GameStateManager& stateManager_;
     int levelNumber_;
     bool twoPlayerMode_;
+    bool useWaveGenerator_;
     float displayTime_;
     bool waitingForInput_;
 

@@ -395,7 +395,7 @@ void PlayingState::checkGameState() {
             nextLevel = 1;
         }
 
-        stateManager_.changeToStage(nextLevel, twoPlayerMode_);
+        stateManager_.changeToStage(nextLevel, twoPlayerMode_, useWaveGenerator_);
     }
 }
 

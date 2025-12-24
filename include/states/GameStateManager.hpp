@@ -24,8 +24,8 @@ public:
 
     // Convenience methods for state transitions
     void changeToMenu();
-    void changeToStage(int levelNumber, bool twoPlayer = false);
-    void changeToPlaying(int levelNumber, bool twoPlayer);
+    void changeToStage(int levelNumber, bool twoPlayer = false, bool useWaveGenerator = false);
+    void changeToPlaying(int levelNumber, bool twoPlayer, bool useWaveGenerator = false);
     void changeToScore(int levelNumber, bool victory);
     void changeToConstruction(int levelNumber = 1);
 

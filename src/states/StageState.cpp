@@ -6,10 +6,11 @@
 
 namespace tank {
 
-StageState::StageState(GameStateManager& manager, int levelNumber, bool twoPlayer)
+StageState::StageState(GameStateManager& manager, int levelNumber, bool twoPlayer, bool useWaveGenerator)
     : stateManager_(manager)
     , levelNumber_(levelNumber)
     , twoPlayerMode_(twoPlayer)
+    , useWaveGenerator_(useWaveGenerator)
     , displayTime_(0.0f)
     , waitingForInput_(false)
 {
@@ -29,7 +30,7 @@ void StageState::update(float deltaTime) {
 
     // After display duration, transition to playing state
     if (displayTime_ >= DISPLAY_DURATION && !waitingForInput_) {
-        stateManager_.changeToPlaying(levelNumber_, twoPlayerMode_);
+        stateManager_.changeToPlaying(levelNumber_, twoPlayerMode_, useWaveGenerator_);
     }
 }
 
@@ -61,7 +62,7 @@ void StageState::render(IRenderer& renderer) {
 void StageState::handleInput(const IInput& input) {
     // Allow skipping with Enter or Space
     if (input.isKeyPressed(SDL_SCANCODE_RETURN) || input.isKeyPressed(SDL_SCANCODE_SPACE)) {
-        stateManager_.changeToPlaying(levelNumber_, twoPlayerMode_);
+        stateManager_.changeToPlaying(levelNumber_, twoPlayerMode_, useWaveGenerator_);
     }
 }
 

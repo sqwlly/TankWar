@@ -72,4 +72,6 @@ target_link_libraries(TankGameTests PRIVATE
 
 # Enable testing
 include(GoogleTest)
-gtest_discover_tests(TankGameTests)
+gtest_discover_tests(TankGameTests
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)

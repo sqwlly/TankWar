@@ -13,7 +13,7 @@ namespace tank::test {
 
 TEST(PlayingStateWaveGeneratorVictoryTest, WaveGeneratorEnabled_VictoryTransitionsToNextLevelPlaying) {
     GameStateManager manager;
-    manager.changeToPlaying(/*levelNumber=*/1, /*twoPlayer=*/true);
+    manager.changeToPlaying(/*levelNumber=*/1, /*twoPlayer=*/true, /*useWaveGenerator=*/true);
     manager.update(0.0f);  // Apply pending change -> PlayingState
 
     ASSERT_NE(manager.getCurrentState(), nullptr);

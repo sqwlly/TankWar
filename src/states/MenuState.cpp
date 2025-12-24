@@ -89,7 +89,7 @@ void MenuState::confirmSelection() {
             break;
 
         case MenuItem::Survival:
-            stateManager_.changeToPlaying(1, /*twoPlayer=*/false);
+            stateManager_.changeToPlaying(1, /*twoPlayer=*/false, /*useWaveGenerator=*/true);
             break;
     }
 }
