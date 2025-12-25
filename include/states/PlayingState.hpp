@@ -12,6 +12,7 @@
 #include "entities/terrain/Grass.hpp"
 #include "entities/terrain/Base.hpp"
 #include "entities/projectiles/Bullet.hpp"
+#include "entities/effects/Effect.hpp"
 #include "ui/GameHUD.hpp"
 #include <vector>
 #include <memory>
@@ -69,6 +70,7 @@ private:
     std::vector<std::unique_ptr<Bullet>> bullets_;
     std::vector<std::unique_ptr<ITerrain>> terrains_;
     std::unique_ptr<Base> base_;
+    std::vector<std::unique_ptr<Effect>> effects_;
 
     // Collision
     CollisionManager collisionManager_;
@@ -101,6 +103,7 @@ private:
     void setupCollisionHandlers();
 
     void updateEntities(float deltaTime);
+    void updateEffects(float deltaTime);
     void checkCollisions();
     void checkTankTerrainCollisions();
     void removeDeadEntities();

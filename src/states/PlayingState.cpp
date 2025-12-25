@@ -5,6 +5,7 @@
 #include "collision/handlers/TankTerrainHandler.hpp"
 #include "collision/handlers/TankTankHandler.hpp"
 #include "collision/handlers/BulletBulletHandler.hpp"
+#include "entities/effects/Effect.hpp"
 #include "input/IInput.hpp"
 #include "input/PlayerInput.hpp"
 #include "level/EnemyWaveGenerator.hpp"
@@ -39,6 +40,11 @@ PlayerInput readPlayer2Input(const IInput& input) {
     playerInput.fire = input.isKeyDown(SDL_SCANCODE_RETURN) || input.isKeyDown(SDL_SCANCODE_KP_ENTER) ||
                        input.isKeyDown(SDL_SCANCODE_RCTRL);
     return playerInput;
+}
+
+Vector2 centeredEffectTopLeft(const Rectangle& bounds, float effectSize) {
+    const Vector2 center = bounds.center();
+    return Vector2(center.x - effectSize / 2.0f, center.y - effectSize / 2.0f);
 }
 } // namespace
 
@@ -83,6 +89,7 @@ void PlayingState::exit() {
     bullets_.clear();
     enemies_.clear();
     terrains_.clear();
+    effects_.clear();
     player1_.reset();
     player2_.reset();
     base_.reset();
@@ -106,6 +113,7 @@ void PlayingState::loadLevel() {
     enemiesSpawned_ = 0;
     enemiesAlive_ = 0;
     levelComplete_ = false;
+    effects_.clear();
 
     createTerrain();
     createPlayers();
@@ -203,6 +211,7 @@ void PlayingState::update(float deltaTime) {
     // Update game over animation even when game is over
     if (gameOver_) {
         gameOverOverlay_.update(deltaTime);
+        updateEffects(deltaTime);
         return;
     }
 
@@ -260,9 +269,47 @@ void PlayingState::updateEntities(float deltaTime) {
     if (base_) {
         base_->update(deltaTime);
     }
+
+    updateEffects(deltaTime);
+}
+
+void PlayingState::updateEffects(float deltaTime) {
+    for (auto& effect : effects_) {
+        if (effect->isActive()) {
+            effect->update(deltaTime);
+        }
+    }
+
+    effects_.erase(
+        std::remove_if(effects_.begin(), effects_.end(),
+            [](const std::unique_ptr<Effect>& e) { return !e->isActive(); }),
+        effects_.end()
+    );
 }
 
 void PlayingState::checkCollisions() {
+    std::vector<Bullet*> bulletsAliveAtStart;
+    bulletsAliveAtStart.reserve(bullets_.size());
+    for (auto& bullet : bullets_) {
+        if (bullet->isAlive()) {
+            bulletsAliveAtStart.push_back(bullet.get());
+        }
+    }
+
+    std::vector<ITank*> tanksAliveAtStart;
+    tanksAliveAtStart.reserve(enemies_.size() + 2);
+    if (player1_ && player1_->isAlive()) {
+        tanksAliveAtStart.push_back(player1_.get());
+    }
+    if (player2_ && player2_->isAlive()) {
+        tanksAliveAtStart.push_back(player2_.get());
+    }
+    for (auto& enemy : enemies_) {
+        if (enemy->isAlive()) {
+            tanksAliveAtStart.push_back(enemy.get());
+        }
+    }
+
     // Tank vs Terrain collisions (must happen before any other checks)
     checkTankTerrainCollisions();
 
@@ -349,6 +396,21 @@ void PlayingState::checkCollisions() {
 
     // Bullet vs Bullet
     collisionManager_.checkCollisionsInternal(bullets_);
+
+    // Spawn explosions for bullets/tanks destroyed during the collision phase.
+    for (Bullet* bullet : bulletsAliveAtStart) {
+        if (bullet && !bullet->isAlive()) {
+            const Vector2 pos = centeredEffectTopLeft(bullet->getBounds(), static_cast<float>(Constants::ELEMENT_SIZE));
+            effects_.push_back(std::make_unique<BulletExplosion>(static_cast<int>(pos.x), static_cast<int>(pos.y)));
+        }
+    }
+
+    for (ITank* tank : tanksAliveAtStart) {
+        if (tank && !tank->isAlive()) {
+            const Vector2 pos = centeredEffectTopLeft(tank->getBounds(), static_cast<float>(Constants::ELEMENT_SIZE * 2));
+            effects_.push_back(std::make_unique<TankExplosion>(static_cast<int>(pos.x), static_cast<int>(pos.y)));
+        }
+    }
 }
 
 void PlayingState::removeDeadEntities() {
@@ -626,6 +688,13 @@ void PlayingState::renderEntities(IRenderer& renderer) {
     for (const auto& terrain : terrains_) {
         if (terrain->getRenderLayer() == RenderLayer::Grass && terrain->isActive()) {
             terrain->render(renderer);
+        }
+    }
+
+    // Render effects on top (explosions, etc.)
+    for (const auto& effect : effects_) {
+        if (effect->isActive()) {
+            effect->render(renderer);
         }
     }
 }
