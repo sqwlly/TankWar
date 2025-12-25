@@ -1,11 +1,11 @@
 #include "input/InputManager.hpp"
-#include <algorithm>
 
 namespace tank {
 
 InputManager::InputManager() {
     currentKeys_.fill(false);
     previousKeys_.fill(false);
+    eventKeys_.fill(false);
     currentMouseButtons_.fill(false);
     previousMouseButtons_.fill(false);
     initializeKeyMappings();
@@ -35,6 +35,9 @@ void InputManager::processEvents() {
     // Ensure SDL internal input state is refreshed every frame, even if the event queue is empty.
     SDL_PumpEvents();
 
+    // Clear per-frame edge flags.
+    eventKeys_.fill(false);
+
     SDL_Event event;
     bool shouldClearKeyboardState = false;
     while (SDL_PollEvent(&event)) {
@@ -47,6 +50,12 @@ void InputManager::processEvents() {
                 break;
 
             case SDL_KEYDOWN:
+                if (event.key.keysym.scancode < SDL_NUM_SCANCODES) {
+                    currentKeys_[event.key.keysym.scancode] = true;
+                    if (!event.key.repeat) {
+                        eventKeys_[event.key.keysym.scancode] = true;
+                    }
+                }
                 if (!event.key.repeat) {
                     inputEvent.type = InputEvent::Type::KeyDown;
                     inputEvent.keycode = event.key.keysym.sym;
@@ -54,6 +63,9 @@ void InputManager::processEvents() {
                 break;
 
             case SDL_KEYUP:
+                if (event.key.keysym.scancode < SDL_NUM_SCANCODES) {
+                    currentKeys_[event.key.keysym.scancode] = false;
+                }
                 inputEvent.type = InputEvent::Type::KeyUp;
                 inputEvent.keycode = event.key.keysym.sym;
                 break;
@@ -106,25 +118,17 @@ void InputManager::processEvents() {
     if (shouldClearKeyboardState) {
         currentKeys_.fill(false);
         previousKeys_.fill(false);
+        eventKeys_.fill(false);
         currentMouseButtons_.fill(false);
         previousMouseButtons_.fill(false);
         return;
-    }
-
-    int numKeys = 0;
-    const uint8_t* keyboardState = SDL_GetKeyboardState(&numKeys);
-    const int copyCount = std::min(numKeys, static_cast<int>(SDL_NUM_SCANCODES));
-    for (int i = 0; i < copyCount; ++i) {
-        currentKeys_[i] = keyboardState[i] != 0;
-    }
-    for (int i = copyCount; i < SDL_NUM_SCANCODES; ++i) {
-        currentKeys_[i] = false;
     }
 }
 
 void InputManager::update() {
     previousKeys_ = currentKeys_;
     previousMouseButtons_ = currentMouseButtons_;
+    eventKeys_.fill(false);
 }
 
 SDL_Scancode InputManager::keyToScancode(SDL_Keycode key) const {
@@ -142,7 +146,7 @@ bool InputManager::isKeyDown(SDL_Keycode key) const {
 bool InputManager::isKeyPressed(SDL_Keycode key) const {
     SDL_Scancode scancode = keyToScancode(key);
     if (scancode < SDL_NUM_SCANCODES) {
-        return currentKeys_[scancode] && !previousKeys_[scancode];
+        return eventKeys_[scancode];
     }
     return false;
 }
@@ -164,7 +168,7 @@ bool InputManager::isKeyDown(SDL_Scancode scancode) const {
 
 bool InputManager::isKeyPressed(SDL_Scancode scancode) const {
     if (scancode < SDL_NUM_SCANCODES) {
-        return currentKeys_[scancode] && !previousKeys_[scancode];
+        return eventKeys_[scancode];
     }
     return false;
 }

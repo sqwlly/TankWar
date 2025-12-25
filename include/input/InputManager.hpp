@@ -85,6 +85,7 @@ private:
     // Keyboard state
     std::array<bool, SDL_NUM_SCANCODES> currentKeys_{};
     std::array<bool, SDL_NUM_SCANCODES> previousKeys_{};
+    std::array<bool, SDL_NUM_SCANCODES> eventKeys_{};  // Keys pressed this frame (KeyDown edge)
 
     // Mouse state
     int mouseX_ = 0;
