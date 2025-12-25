@@ -33,6 +33,8 @@ set(GAME_SOURCES
     ${SRC_DIR}/entities/terrain/Grass.cpp
     ${SRC_DIR}/entities/terrain/Base.cpp
     ${SRC_DIR}/entities/effects/Effect.cpp
+    ${SRC_DIR}/entities/powerups/PowerUp.cpp
+    ${SRC_DIR}/entities/powerups/PowerUpManager.cpp
     ${SRC_DIR}/graphics/Animation.cpp
     ${SRC_DIR}/collision/CollisionManager.cpp
     ${SRC_DIR}/collision/handlers/BulletTankHandler.cpp

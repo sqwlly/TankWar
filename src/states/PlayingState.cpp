@@ -90,6 +90,7 @@ void PlayingState::exit() {
     enemies_.clear();
     terrains_.clear();
     effects_.clear();
+    powerUpManager_.clear();
     player1_.reset();
     player2_.reset();
     base_.reset();
@@ -114,6 +115,7 @@ void PlayingState::loadLevel() {
     enemiesAlive_ = 0;
     levelComplete_ = false;
     effects_.clear();
+    powerUpManager_.clear();
 
     createTerrain();
     createPlayers();
@@ -212,6 +214,7 @@ void PlayingState::update(float deltaTime) {
     if (gameOver_) {
         gameOverOverlay_.update(deltaTime);
         updateEffects(deltaTime);
+        powerUpManager_.update(deltaTime);
         return;
     }
 
@@ -271,6 +274,7 @@ void PlayingState::updateEntities(float deltaTime) {
     }
 
     updateEffects(deltaTime);
+    powerUpManager_.update(deltaTime);
 }
 
 void PlayingState::updateEffects(float deltaTime) {
@@ -411,6 +415,13 @@ void PlayingState::checkCollisions() {
             effects_.push_back(std::make_unique<TankExplosion>(static_cast<int>(pos.x), static_cast<int>(pos.y)));
         }
     }
+
+    if (player1_) {
+        powerUpManager_.tryCollect(*player1_);
+    }
+    if (player2_) {
+        powerUpManager_.tryCollect(*player2_);
+    }
 }
 
 void PlayingState::removeDeadEntities() {
@@ -427,6 +438,9 @@ void PlayingState::removeDeadEntities() {
         std::remove_if(enemies_.begin(), enemies_.end(),
             [this, &deadEnemies](const std::unique_ptr<EnemyTank>& e) {
                 if (!e->isAlive()) {
+                    if (e->carriesPowerUp()) {
+                        powerUpManager_.spawn(e->getPosition(), PowerUpType::Star);
+                    }
                     detachBulletsFromTank(e.get());
                     ++deadEnemies;
                     return true;
@@ -690,6 +704,8 @@ void PlayingState::renderEntities(IRenderer& renderer) {
             terrain->render(renderer);
         }
     }
+
+    powerUpManager_.render(renderer);
 
     // Render effects on top (explosions, etc.)
     for (const auto& effect : effects_) {
