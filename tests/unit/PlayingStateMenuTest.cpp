@@ -48,6 +48,52 @@ TEST(PlayingStateMenuTest, PauseMenuContinueThenRestart) {
     EXPECT_EQ(manager.getCurrentState()->getType(), StateType::Playing);
 }
 
+TEST(PlayingStateMenuTest, PauseMenuEscapeResumesGame) {
+    GameStateManager manager;
+    PlayingState state(manager, /*levelNumber=*/1, /*twoPlayer=*/false);
+    ScriptedInput input;
+
+    pressKeyOnce(state, input, SDL_SCANCODE_ESCAPE);
+    EXPECT_TRUE(state.isPaused());
+
+    pressKeyOnce(state, input, SDL_SCANCODE_ESCAPE);
+    EXPECT_FALSE(state.isPaused());
+}
+
+TEST(PlayingStateMenuTest, PauseMenuRRestartsLevel) {
+    GameStateManager manager;
+    PlayingState state(manager, /*levelNumber=*/1, /*twoPlayer=*/false);
+    ScriptedInput input;
+
+    pressKeyOnce(state, input, SDL_SCANCODE_ESCAPE);
+    EXPECT_TRUE(state.isPaused());
+
+    pressKeyOnce(state, input, SDL_SCANCODE_R);
+
+    manager.update(0.0f);
+    ASSERT_NE(manager.getCurrentState(), nullptr);
+    ASSERT_EQ(manager.getCurrentState()->getType(), StateType::Playing);
+
+    auto* playing = dynamic_cast<PlayingState*>(manager.getCurrentState());
+    ASSERT_NE(playing, nullptr);
+    EXPECT_EQ(playing->getCurrentLevel(), 1);
+}
+
+TEST(PlayingStateMenuTest, PauseMenuMReturnsToMainMenu) {
+    GameStateManager manager;
+    PlayingState state(manager, /*levelNumber=*/1, /*twoPlayer=*/false);
+    ScriptedInput input;
+
+    pressKeyOnce(state, input, SDL_SCANCODE_ESCAPE);
+    EXPECT_TRUE(state.isPaused());
+
+    pressKeyOnce(state, input, SDL_SCANCODE_M);
+
+    manager.update(0.0f);
+    ASSERT_NE(manager.getCurrentState(), nullptr);
+    EXPECT_EQ(manager.getCurrentState()->getType(), StateType::Menu);
+}
+
 TEST(PlayingStateMenuTest, PauseMenuReturnToMainMenu) {
     GameStateManager manager;
     PlayingState state(manager, /*levelNumber=*/1, /*twoPlayer=*/false);
@@ -81,5 +127,58 @@ TEST(PlayingStateMenuTest, GameOverEscapeReturnsToMenu) {
     EXPECT_EQ(manager.getCurrentState()->getType(), StateType::Menu);
 }
 
-} // namespace tank::test
+TEST(PlayingStateMenuTest, GameOverEnterRestartsLevel) {
+    GameStateManager manager;
+    PlayingState state(manager, /*levelNumber=*/1, /*twoPlayer=*/false);
+    ScriptedInput input;
 
+    state.gameOver_ = true;
+    state.gameOverOverlay_.start();
+
+    pressKeyOnce(state, input, SDL_SCANCODE_RETURN);
+
+    manager.update(0.0f);
+    ASSERT_NE(manager.getCurrentState(), nullptr);
+    ASSERT_EQ(manager.getCurrentState()->getType(), StateType::Playing);
+
+    auto* playing = dynamic_cast<PlayingState*>(manager.getCurrentState());
+    ASSERT_NE(playing, nullptr);
+    EXPECT_EQ(playing->getCurrentLevel(), 1);
+}
+
+TEST(PlayingStateMenuTest, GameOverSelectMainMenuThenSpaceReturnsToMenu) {
+    GameStateManager manager;
+    PlayingState state(manager, /*levelNumber=*/1, /*twoPlayer=*/false);
+    ScriptedInput input;
+
+    state.gameOver_ = true;
+    state.gameOverOverlay_.start();
+
+    pressKeyOnce(state, input, SDL_SCANCODE_DOWN);
+    pressKeyOnce(state, input, SDL_SCANCODE_SPACE);
+
+    manager.update(0.0f);
+    ASSERT_NE(manager.getCurrentState(), nullptr);
+    EXPECT_EQ(manager.getCurrentState()->getType(), StateType::Menu);
+}
+
+TEST(PlayingStateMenuTest, GameOverRRestartsLevel) {
+    GameStateManager manager;
+    PlayingState state(manager, /*levelNumber=*/1, /*twoPlayer=*/false);
+    ScriptedInput input;
+
+    state.gameOver_ = true;
+    state.gameOverOverlay_.start();
+
+    pressKeyOnce(state, input, SDL_SCANCODE_R);
+
+    manager.update(0.0f);
+    ASSERT_NE(manager.getCurrentState(), nullptr);
+    ASSERT_EQ(manager.getCurrentState()->getType(), StateType::Playing);
+
+    auto* playing = dynamic_cast<PlayingState*>(manager.getCurrentState());
+    ASSERT_NE(playing, nullptr);
+    EXPECT_EQ(playing->getCurrentLevel(), 1);
+}
+
+} // namespace tank::test
