@@ -3,6 +3,7 @@
 #include "input/IInput.hpp"
 #include <algorithm>
 #include <array>
+#include <unordered_set>
 
 namespace tank::test {
 
@@ -22,6 +23,8 @@ public:
         previousKeys_.fill(false);
         currentMouseButtons_.fill(false);
         previousMouseButtons_.fill(false);
+        currentKeycodes_.clear();
+        previousKeycodes_.clear();
         mouseX_ = 0;
         mouseY_ = 0;
     }
@@ -29,6 +32,7 @@ public:
     void advanceFrame() {
         previousKeys_ = currentKeys_;
         previousMouseButtons_ = currentMouseButtons_;
+        previousKeycodes_ = currentKeycodes_;
     }
 
     void setKeyDown(SDL_Scancode scancode, bool down) {
@@ -38,7 +42,11 @@ public:
     }
 
     void setKeyDown(SDL_Keycode keycode, bool down) {
-        setKeyDown(SDL_GetScancodeFromKey(keycode), down);
+        if (down) {
+            currentKeycodes_.insert(keycode);
+        } else {
+            currentKeycodes_.erase(keycode);
+        }
     }
 
     void setMousePosition(int x, int y) {
@@ -53,7 +61,7 @@ public:
     }
 
     bool isKeyDown(SDL_Keycode key) const override {
-        return isKeyDown(SDL_GetScancodeFromKey(key));
+        return currentKeycodes_.find(key) != currentKeycodes_.end();
     }
 
     bool isKeyDown(SDL_Scancode scancode) const override {
@@ -64,7 +72,8 @@ public:
     }
 
     bool isKeyPressed(SDL_Keycode key) const override {
-        return isKeyPressed(SDL_GetScancodeFromKey(key));
+        return currentKeycodes_.find(key) != currentKeycodes_.end() &&
+               previousKeycodes_.find(key) == previousKeycodes_.end();
     }
 
     bool isKeyPressed(SDL_Scancode scancode) const override {
@@ -75,11 +84,8 @@ public:
     }
 
     bool isKeyReleased(SDL_Keycode key) const override {
-        SDL_Scancode scancode = SDL_GetScancodeFromKey(key);
-        if (scancode < SDL_NUM_SCANCODES) {
-            return !currentKeys_[scancode] && previousKeys_[scancode];
-        }
-        return false;
+        return currentKeycodes_.find(key) == currentKeycodes_.end() &&
+               previousKeycodes_.find(key) != previousKeycodes_.end();
     }
 
     int getMouseX() const override { return mouseX_; }
@@ -111,6 +117,8 @@ private:
 
     std::array<bool, SDL_NUM_SCANCODES> currentKeys_{};
     std::array<bool, SDL_NUM_SCANCODES> previousKeys_{};
+    std::unordered_set<SDL_Keycode> currentKeycodes_{};
+    std::unordered_set<SDL_Keycode> previousKeycodes_{};
     std::array<bool, MOUSE_BUTTON_COUNT> currentMouseButtons_{};
     std::array<bool, MOUSE_BUTTON_COUNT> previousMouseButtons_{};
     int mouseX_ = 0;
@@ -118,4 +126,3 @@ private:
 };
 
 } // namespace tank::test
-

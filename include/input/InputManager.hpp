@@ -6,6 +6,7 @@
 #include <SDL2/SDL.h>
 #include <array>
 #include <functional>
+#include <unordered_set>
 
 namespace tank {
 
@@ -86,6 +87,9 @@ private:
     std::array<bool, SDL_NUM_SCANCODES> currentKeys_{};
     std::array<bool, SDL_NUM_SCANCODES> previousKeys_{};
     std::array<bool, SDL_NUM_SCANCODES> eventKeys_{};  // Keys pressed this frame (KeyDown edge)
+    std::unordered_set<SDL_Keycode> currentKeycodes_{};
+    std::unordered_set<SDL_Keycode> previousKeycodes_{};
+    std::unordered_set<SDL_Keycode> eventKeycodes_{};  // Keycodes pressed this frame (KeyDown edge)
 
     // Mouse state
     int mouseX_ = 0;
@@ -98,7 +102,6 @@ private:
     std::array<KeyMapping, 2> playerMappings_;
 
     void initializeKeyMappings();
-    SDL_Scancode keyToScancode(SDL_Keycode key) const;
 };
 
 } // namespace tank

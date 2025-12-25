@@ -37,6 +37,7 @@ void InputManager::processEvents() {
 
     // Clear per-frame edge flags.
     eventKeys_.fill(false);
+    eventKeycodes_.clear();
 
     SDL_Event event;
     bool shouldClearKeyboardState = false;
@@ -56,6 +57,10 @@ void InputManager::processEvents() {
                         eventKeys_[event.key.keysym.scancode] = true;
                     }
                 }
+                currentKeycodes_.insert(event.key.keysym.sym);
+                if (!event.key.repeat) {
+                    eventKeycodes_.insert(event.key.keysym.sym);
+                }
                 if (!event.key.repeat) {
                     inputEvent.type = InputEvent::Type::KeyDown;
                     inputEvent.keycode = event.key.keysym.sym;
@@ -66,6 +71,7 @@ void InputManager::processEvents() {
                 if (event.key.keysym.scancode < SDL_NUM_SCANCODES) {
                     currentKeys_[event.key.keysym.scancode] = false;
                 }
+                currentKeycodes_.erase(event.key.keysym.sym);
                 inputEvent.type = InputEvent::Type::KeyUp;
                 inputEvent.keycode = event.key.keysym.sym;
                 break;
@@ -119,6 +125,9 @@ void InputManager::processEvents() {
         currentKeys_.fill(false);
         previousKeys_.fill(false);
         eventKeys_.fill(false);
+        currentKeycodes_.clear();
+        previousKeycodes_.clear();
+        eventKeycodes_.clear();
         currentMouseButtons_.fill(false);
         previousMouseButtons_.fill(false);
         return;
@@ -128,35 +137,23 @@ void InputManager::processEvents() {
 void InputManager::update() {
     previousKeys_ = currentKeys_;
     previousMouseButtons_ = currentMouseButtons_;
+    previousKeycodes_ = currentKeycodes_;
     eventKeys_.fill(false);
-}
-
-SDL_Scancode InputManager::keyToScancode(SDL_Keycode key) const {
-    return SDL_GetScancodeFromKey(key);
+    eventKeycodes_.clear();
 }
 
 bool InputManager::isKeyDown(SDL_Keycode key) const {
-    SDL_Scancode scancode = keyToScancode(key);
-    if (scancode < SDL_NUM_SCANCODES) {
-        return currentKeys_[scancode];
-    }
-    return false;
+    return currentKeycodes_.find(key) != currentKeycodes_.end();
 }
 
 bool InputManager::isKeyPressed(SDL_Keycode key) const {
-    SDL_Scancode scancode = keyToScancode(key);
-    if (scancode < SDL_NUM_SCANCODES) {
-        return eventKeys_[scancode];
-    }
-    return false;
+    return eventKeycodes_.find(key) != eventKeycodes_.end();
 }
 
 bool InputManager::isKeyReleased(SDL_Keycode key) const {
-    SDL_Scancode scancode = keyToScancode(key);
-    if (scancode < SDL_NUM_SCANCODES) {
-        return !currentKeys_[scancode] && previousKeys_[scancode];
-    }
-    return false;
+    const bool isDownNow = currentKeycodes_.find(key) != currentKeycodes_.end();
+    const bool wasDown = previousKeycodes_.find(key) != previousKeycodes_.end();
+    return !isDownNow && wasDown;
 }
 
 bool InputManager::isKeyDown(SDL_Scancode scancode) const {
