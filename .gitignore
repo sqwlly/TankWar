@@ -27,6 +27,11 @@ Thumbs.db
 # Logs
 *.log
 
+# Coverage
+*.gcda
+*.gcno
+*.gcov
+
 # Build outputs
 build*/
 release/
