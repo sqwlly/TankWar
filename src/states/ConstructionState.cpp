@@ -55,7 +55,7 @@ void ConstructionState::enter() {
     lastSavedPath_.clear();
 
     loadLevel(levelNumber_);
-    setStatus("Construction: 方向键移动，数字键选材质，鼠标左绘制右擦除，Tab切模式");
+    setStatus("Construction: arrows move, 0-4 brush, LMB paint RMB erase, Tab mode");
 }
 
 void ConstructionState::exit() {
@@ -102,7 +102,7 @@ void ConstructionState::handleInput(const IInput& input) {
 
     if (input.isKeyPressed(SDL_SCANCODE_TAB)) {
         mode_ = (mode_ == EditorMode::Terrain) ? EditorMode::EnemyList : EditorMode::Terrain;
-        setStatus(mode_ == EditorMode::Terrain ? "模式：地形编辑" : "模式：敌人序列编辑");
+        setStatus(mode_ == EditorMode::Terrain ? "Mode: terrain editor" : "Mode: enemy list editor");
     }
 
     // Navigation
@@ -172,7 +172,7 @@ void ConstructionState::handleInput(const IInput& input) {
     // New / reload
     if (input.isKeyPressed(SDL_SCANCODE_N)) {
         createNewLevel(levelNumber_);
-        setStatus("已创建空白关卡");
+        setStatus("Created blank level");
         return;
     }
     if (input.isKeyPressed(SDL_SCANCODE_L)) {
@@ -181,7 +181,7 @@ void ConstructionState::handleInput(const IInput& input) {
         } else if (consumeConfirm(ConfirmAction::ReloadLevel)) {
             loadLevel(levelNumber_);
         } else {
-            requestConfirm(ConfirmAction::ReloadLevel, "将丢弃未保存更改：再次按 L 重新加载");
+            requestConfirm(ConfirmAction::ReloadLevel, "Unsaved changes will be lost: press L again to reload");
         }
         return;
     }
@@ -192,7 +192,7 @@ void ConstructionState::handleInput(const IInput& input) {
         if (consumeConfirm(ConfirmAction::OverwriteLevelFile)) {
             overwriteCurrentLevelFile();
         } else {
-            requestConfirm(ConfirmAction::OverwriteLevelFile, "将覆盖 assets/levels/Level_N：再次按 Ctrl+S 确认");
+            requestConfirm(ConfirmAction::OverwriteLevelFile, "Will overwrite assets/levels/Level_N: press Ctrl+S again");
         }
         return;
     }
@@ -223,7 +223,7 @@ void ConstructionState::handleInput(const IInput& input) {
             return;
         }
 
-        requestConfirm(ConfirmAction::ExitToMenu, "未保存更改：再次按 Esc 退出，或按 S 保存");
+        requestConfirm(ConfirmAction::ExitToMenu, "Unsaved changes: press Esc again to exit, or press S to save");
         return;
     }
 }
@@ -233,7 +233,7 @@ void ConstructionState::loadLevel(int levelNumber) {
     level_ = levelLoader_.loadLevel(levelNumber_);
     if (!level_) {
         createNewLevel(levelNumber_);
-        setStatus("加载失败：已创建空白关卡");
+        setStatus("Load failed: created blank level");
         return;
     }
 
@@ -241,7 +241,7 @@ void ConstructionState::loadLevel(int levelNumber) {
     dirty_ = false;
     pendingConfirm_ = ConfirmAction::None;
     confirmTimeLeft_ = 0.0f;
-    setStatus("已加载 Level_" + std::to_string(levelNumber_));
+    setStatus("Loaded Level_" + std::to_string(levelNumber_));
 }
 
 void ConstructionState::createNewLevel(int levelNumber) {
@@ -355,9 +355,9 @@ bool ConstructionState::saveToCustomFile() {
     if (ok) {
         lastSavedPath_ = filePath;
         dirty_ = false;
-        setStatus("已保存到 " + filePath);
+        setStatus("Saved to " + filePath);
     } else {
-        setStatus("保存失败：" + filePath);
+        setStatus("Save failed: " + filePath);
     }
     return ok;
 }
@@ -370,9 +370,9 @@ bool ConstructionState::overwriteCurrentLevelFile() {
     if (ok) {
         lastSavedPath_ = filePath;
         dirty_ = false;
-        setStatus("已覆盖保存到 " + filePath);
+        setStatus("Overwrote " + filePath);
     } else {
-        setStatus("保存失败：" + filePath);
+        setStatus("Save failed: " + filePath);
     }
     return ok;
 }
@@ -456,16 +456,16 @@ void ConstructionState::renderSidebar(IRenderer& renderer) {
     renderer.drawText("CONSTRUCTION", Vector2(SIDEBAR_X, SIDEBAR_Y), Constants::COLOR_WHITE, 16);
 
     int y = SIDEBAR_Y + 22;
-    renderer.drawText("关卡: " + std::to_string(levelNumber_), Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_WHITE, 14);
+    renderer.drawText("LEVEL: " + std::to_string(levelNumber_), Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_WHITE, 14);
     y += 18;
-    renderer.drawText(std::string("模式: ") + (mode_ == EditorMode::Terrain ? "地形" : "敌人"),
+    renderer.drawText(std::string("MODE: ") + (mode_ == EditorMode::Terrain ? "TERRAIN" : "ENEMIES"),
                       Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 14);
     y += 18;
-    renderer.drawText(std::string("光标: ") + std::to_string(cursorX_) + "," + std::to_string(cursorY_),
+    renderer.drawText(std::string("CURSOR: ") + std::to_string(cursorX_) + "," + std::to_string(cursorY_),
                       Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 14);
     y += 18;
 
-    renderer.drawText(std::string("笔刷: ") + terrainName(brushType_), Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_WHITE, 14);
+    renderer.drawText(std::string("BRUSH: ") + terrainName(brushType_), Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_WHITE, 14);
     y += 22;
 
     // Brush preview
@@ -477,24 +477,24 @@ void ConstructionState::renderSidebar(IRenderer& renderer) {
                            false);
     y += 28;
 
-    renderer.drawText("0 空  1 钢", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
+    renderer.drawText("0 EMPTY  1 STEEL", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
     y += 14;
-    renderer.drawText("2 砖  3 水", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
+    renderer.drawText("2 BRICK  3 WATER", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
     y += 14;
-    renderer.drawText("4 草  Shift=2x2", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
+    renderer.drawText("4 GRASS  Shift=2x2", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
     y += 22;
 
-    renderer.drawText("鼠标左键绘制/右键擦除", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
+    renderer.drawText("LMB paint / RMB erase", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
     y += 14;
-    renderer.drawText("Tab: 切换模式", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
+    renderer.drawText("Tab: switch mode", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
     y += 22;
 
     if (mode_ == EditorMode::EnemyList && level_) {
         const auto& enemies = level_->getEnemySpawnList();
 
-        renderer.drawText("敌人序列:", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_WHITE, 12);
+        renderer.drawText("ENEMY LIST:", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_WHITE, 12);
         y += 14;
-        renderer.drawText("[] 选中  1-4 类型  P 奖励", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
+        renderer.drawText("[] select  1-4 type  P powerup", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
         y += 16;
 
         std::string line;
@@ -510,7 +510,7 @@ void ConstructionState::renderSidebar(IRenderer& renderer) {
         if (!enemies.empty()) {
             const int selected = std::clamp(selectedEnemyIndex_, 0, static_cast<int>(enemies.size() - 1));
             const auto& sel = enemies[static_cast<size_t>(selected)];
-            std::string selText = "选中 #" + std::to_string(selected) +
+            std::string selText = "Selected #" + std::to_string(selected) +
                                   " = " + std::to_string(static_cast<int>(sel.type) + 1) +
                                   (sel.hasPowerUp ? " (BONUS)" : "");
             renderer.drawText(selText, Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_WHITE, 12);
@@ -518,15 +518,15 @@ void ConstructionState::renderSidebar(IRenderer& renderer) {
         }
     }
 
-    renderer.drawText("S: 保存到 Level_custom", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
+    renderer.drawText("S: save to Level_custom", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
     y += 14;
-    renderer.drawText("Ctrl+S: 覆盖 Level_N", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
+    renderer.drawText("Ctrl+S: overwrite Level_N", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
     y += 14;
-    renderer.drawText("F5: 保存并试玩(可F6返回)", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
+    renderer.drawText("F5: save & play (F6 back)", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
     y += 14;
-    renderer.drawText("L: 重新加载  N: 新建", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
+    renderer.drawText("L: reload  N: new", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
     y += 14;
-    renderer.drawText("PgUp/PgDn: 切关", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
+    renderer.drawText("PgUp/PgDn: change level", Vector2(SIDEBAR_X, static_cast<float>(y)), Constants::COLOR_GRAY, 12);
     y += 20;
 
     if (!lastSavedPath_.empty()) {
@@ -544,13 +544,13 @@ void ConstructionState::renderSidebar(IRenderer& renderer) {
 
 const char* ConstructionState::terrainName(TerrainType type) {
     switch (type) {
-        case TerrainType::Empty: return "空";
-        case TerrainType::Steel: return "钢";
-        case TerrainType::Brick: return "砖";
-        case TerrainType::Water: return "水";
-        case TerrainType::Grass: return "草";
-        case TerrainType::Base: return "基地";
-        default: return "未知";
+        case TerrainType::Empty: return "EMPTY";
+        case TerrainType::Steel: return "STEEL";
+        case TerrainType::Brick: return "BRICK";
+        case TerrainType::Water: return "WATER";
+        case TerrainType::Grass: return "GRASS";
+        case TerrainType::Base: return "BASE";
+        default: return "UNKNOWN";
     }
 }
 

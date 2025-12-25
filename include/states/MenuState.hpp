@@ -35,6 +35,7 @@ private:
     static constexpr int MENU_ITEM_COUNT = 2;
 
     MenuItem selectedItem_ = MenuItem::Campaign;
+    bool twoPlayerMode_ = false;
     float cursorBlinkTimer_ = 0.0f;
     bool cursorVisible_ = true;
 

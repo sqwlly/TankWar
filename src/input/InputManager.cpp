@@ -32,6 +32,9 @@ void InputManager::initializeKeyMappings() {
 }
 
 void InputManager::processEvents() {
+    // Ensure SDL internal input state is refreshed every frame, even if the event queue is empty.
+    SDL_PumpEvents();
+
     SDL_Event event;
     bool shouldClearKeyboardState = false;
     while (SDL_PollEvent(&event)) {
@@ -102,6 +105,9 @@ void InputManager::processEvents() {
 
     if (shouldClearKeyboardState) {
         currentKeys_.fill(false);
+        previousKeys_.fill(false);
+        currentMouseButtons_.fill(false);
+        previousMouseButtons_.fill(false);
         return;
     }
 

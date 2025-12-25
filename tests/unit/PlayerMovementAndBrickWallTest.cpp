@@ -47,9 +47,8 @@ TEST(PlayerMovementAndBrickWallTest, BrickWallCornersSplitEvenly) {
     EXPECT_FLOAT_EQ(tl.height, bl.height);
     EXPECT_FLOAT_EQ(tl.height, br.height);
 
-    EXPECT_FLOAT_EQ(tl.width + tr.width, static_cast<float>(Constants::CELL_SIZE));
-    EXPECT_FLOAT_EQ(tl.height + bl.height, static_cast<float>(Constants::CELL_SIZE));
+    EXPECT_FLOAT_EQ(tl.width + tr.width, static_cast<float>(Constants::ELEMENT_SIZE));
+    EXPECT_FLOAT_EQ(tl.height + bl.height, static_cast<float>(Constants::ELEMENT_SIZE));
 }
 
 } // namespace tank::test
-

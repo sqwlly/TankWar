@@ -63,8 +63,9 @@ else()
 endif()
 
 # Collect source files
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE HEADERS "include/*.hpp")
+# Use CONFIGURE_DEPENDS so incremental builds pick up newly added files without manual re-configure.
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "include/*.hpp")
 
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})

@@ -11,6 +11,7 @@
 #include "graphics/SpriteSheet.hpp"
 #include "utils/DamageCalculator.hpp"
 #include "ai/AIBehavior.hpp"
+#include <array>
 #include <algorithm>
 
 namespace tank {
@@ -122,25 +123,52 @@ void PlayingState::createTerrain() {
 
     const auto& terrainMap = level_->getTerrainMap();
 
-    for (int y = 0; y < level_->getHeight(); ++y) {
-        for (int x = 0; x < level_->getWidth(); ++x) {
-            TerrainType type = terrainMap[y][x];
-            // Use CELL_SIZE for proper spacing between terrain blocks
-            int posX = x * Constants::CELL_SIZE;
-            int posY = y * Constants::CELL_SIZE;
+    const int width = level_->getWidth();
+    const int height = level_->getHeight();
+
+    // Brick walls are rendered as 2x2 half-cells (34x34) with 4-corner state (classic Battle City).
+    for (int y = 0; y + 1 < height; y += 2) {
+        for (int x = 0; x + 1 < width; x += 2) {
+            const std::array<bool, 4> corners = {
+                terrainMap[y][x] == TerrainType::Brick,
+                terrainMap[y][x + 1] == TerrainType::Brick,
+                terrainMap[y + 1][x] == TerrainType::Brick,
+                terrainMap[y + 1][x + 1] == TerrainType::Brick
+            };
+
+            if (corners[0] || corners[1] || corners[2] || corners[3]) {
+                const int posX = x * Constants::CELL_SIZE;
+                const int posY = y * Constants::CELL_SIZE;
+                terrains_.push_back(std::make_unique<BrickWall>(
+                    Vector2(static_cast<float>(posX), static_cast<float>(posY)),
+                    corners));
+            }
+        }
+    }
+
+    // Other terrain remains half-cell based (17x17) for now.
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            const TerrainType type = terrainMap[y][x];
+            if (type == TerrainType::Brick) {
+                continue;
+            }
+
+            const int posX = x * Constants::CELL_SIZE;
+            const int posY = y * Constants::CELL_SIZE;
 
             switch (type) {
-                case TerrainType::Brick:
-                    terrains_.push_back(std::make_unique<BrickWall>(Vector2(static_cast<float>(posX), static_cast<float>(posY))));
-                    break;
                 case TerrainType::Steel:
-                    terrains_.push_back(std::make_unique<SteelWall>(Vector2(static_cast<float>(posX), static_cast<float>(posY))));
+                    terrains_.push_back(std::make_unique<SteelWall>(
+                        Vector2(static_cast<float>(posX), static_cast<float>(posY))));
                     break;
                 case TerrainType::Water:
-                    terrains_.push_back(std::make_unique<Water>(Vector2(static_cast<float>(posX), static_cast<float>(posY))));
+                    terrains_.push_back(std::make_unique<Water>(
+                        Vector2(static_cast<float>(posX), static_cast<float>(posY))));
                     break;
                 case TerrainType::Grass:
-                    terrains_.push_back(std::make_unique<Grass>(Vector2(static_cast<float>(posX), static_cast<float>(posY))));
+                    terrains_.push_back(std::make_unique<Grass>(
+                        Vector2(static_cast<float>(posX), static_cast<float>(posY))));
                     break;
                 default:
                     break;
@@ -738,6 +766,13 @@ bool PlayingState::isTankSpawnAreaFree(const Vector2& position) const {
         if (!terrain->isActive()) continue;
         if (terrain->isDestroyed()) continue;
         if (terrain->isTankPassable()) continue;
+
+        if (auto* brick = dynamic_cast<BrickWall*>(terrain.get())) {
+            if (brick->intersectsSolid(spawnArea)) {
+                return false;
+            }
+            continue;
+        }
 
         if (CollisionManager::checkAABB(spawnArea, terrain->getBounds())) {
             return false;

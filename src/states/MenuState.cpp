@@ -13,6 +13,7 @@ MenuState::MenuState(GameStateManager& manager)
 void MenuState::enter() {
     std::cout << "Entering Menu State" << std::endl;
     selectedItem_ = MenuItem::Campaign;
+    twoPlayerMode_ = false;
     cursorBlinkTimer_ = 0.0f;
     cursorVisible_ = true;
 }
@@ -43,6 +44,16 @@ void MenuState::render(IRenderer& renderer) {
 }
 
 void MenuState::handleInput(const IInput& input) {
+    if (input.isKeyPressed(SDL_SCANCODE_C)) {
+        stateManager_.changeToConstruction(1);
+        return;
+    }
+
+    if (input.isKeyPressed(SDL_SCANCODE_P)) {
+        twoPlayerMode_ = !twoPlayerMode_;
+        return;
+    }
+
     // Direct mode selection via number keys
     if (input.isKeyPressed(SDL_SCANCODE_1)) {
         selectedItem_ = MenuItem::Campaign;
@@ -85,11 +96,11 @@ void MenuState::confirmSelection() {
 
     switch (selectedItem_) {
         case MenuItem::Campaign:
-            stateManager_.changeToStage(1);
+            stateManager_.changeToStage(1, twoPlayerMode_);
             break;
 
         case MenuItem::Survival:
-            stateManager_.changeToPlaying(1, /*twoPlayer=*/false, /*useWaveGenerator=*/true);
+            stateManager_.changeToPlaying(1, /*twoPlayer=*/twoPlayerMode_, /*useWaveGenerator=*/true);
             break;
     }
 }
@@ -102,14 +113,21 @@ void MenuState::renderTitle(IRenderer& renderer) {
 
 void MenuState::renderMenuItems(IRenderer& renderer) {
     const char* items[] = {
-        "1 \xE6\x88\x98\xE5\xBD\xB9",
-        "2 \xE6\x97\xA0\xE5\xB0\xBD"
+        "1 CAMPAIGN",
+        "2 SURVIVAL"
     };
 
     for (int i = 0; i < MENU_ITEM_COUNT; ++i) {
         int y = MENU_START_Y + i * MENU_ITEM_HEIGHT;
         renderer.drawText(items[i], Vector2(180, static_cast<float>(y)), Constants::COLOR_WHITE, 20);
     }
+
+    const char* playersText = twoPlayerMode_ ? "PLAYERS: 2P (P TO TOGGLE)" : "PLAYERS: 1P (P TO TOGGLE)";
+    renderer.drawText(playersText, Vector2(150, static_cast<float>(MENU_START_Y + MENU_ITEM_COUNT * MENU_ITEM_HEIGHT + 10)),
+                      Constants::COLOR_GRAY, 14);
+
+    renderer.drawText("C CONSTRUCTION", Vector2(180, static_cast<float>(MENU_START_Y + MENU_ITEM_COUNT * MENU_ITEM_HEIGHT + 34)),
+                      Constants::COLOR_GRAY, 14);
 }
 
 void MenuState::renderCursor(IRenderer& renderer) {

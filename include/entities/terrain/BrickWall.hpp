@@ -12,6 +12,7 @@ namespace tank {
 class BrickWall : public Terrain {
 public:
     BrickWall(const Vector2& position);
+    BrickWall(const Vector2& position, const std::array<bool, 4>& cornerStates);
     ~BrickWall() override = default;
 
     // ITerrain overrides

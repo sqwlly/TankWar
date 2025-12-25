@@ -6,27 +6,32 @@
 namespace tank {
 
 BrickWall::BrickWall(const Vector2& position)
-    : Terrain(position, TerrainType::Brick)
+    : BrickWall(position, std::array<bool, 4>{true, true, true, true})
 {
-    // Brick wall is half cell size
-    width_ = Constants::CELL_SIZE;
-    height_ = Constants::CELL_SIZE;
+}
 
-    cornerStates_.fill(true);
+BrickWall::BrickWall(const Vector2& position, const std::array<bool, 4>& cornerStates)
+    : Terrain(position, TerrainType::Brick)
+    , cornerStates_(cornerStates)
+{
+    // Brick wall is a full element (2x2 half-cells), each corner is a half-cell (17px).
+    width_ = Constants::ELEMENT_SIZE;
+    height_ = Constants::ELEMENT_SIZE;
     initializeCorners();
+
+    if (isDestroyed()) {
+        active_ = false;
+    }
 }
 
 void BrickWall::initializeCorners() {
-    // Split into 4 equal quadrants (float-based) to avoid uneven corner sizes (17 / 2 = 8.5).
     const float leftW = width_ / 2.0f;
-    const float rightW = width_ - leftW;
     const float topH = height_ / 2.0f;
-    const float bottomH = height_ - topH;
 
     corners_[0] = Rectangle(position_.x, position_.y, leftW, topH);                  // Top-Left
-    corners_[1] = Rectangle(position_.x + leftW, position_.y, rightW, topH);         // Top-Right
-    corners_[2] = Rectangle(position_.x, position_.y + topH, leftW, bottomH);        // Bottom-Left
-    corners_[3] = Rectangle(position_.x + leftW, position_.y + topH, rightW, bottomH); // Bottom-Right
+    corners_[1] = Rectangle(position_.x + leftW, position_.y, leftW, topH);          // Top-Right
+    corners_[2] = Rectangle(position_.x, position_.y + topH, leftW, topH);           // Bottom-Left
+    corners_[3] = Rectangle(position_.x + leftW, position_.y + topH, leftW, topH);   // Bottom-Right
 }
 
 void BrickWall::takeDamage(int damage, const Rectangle& hitBox) {
