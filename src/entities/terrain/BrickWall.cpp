@@ -17,13 +17,11 @@ BrickWall::BrickWall(const Vector2& position)
 }
 
 void BrickWall::initializeCorners() {
-    // For 17x17 brick, split into 4 corners with proper coverage
-    // Left corners: width = ceil(17/2) = 9, Right corners: width = floor(17/2) = 8
-    // Top corners: height = ceil(17/2) = 9, Bottom corners: height = floor(17/2) = 8
-    float leftW = std::ceil(width_ / 2.0f);
-    float rightW = std::floor(width_ / 2.0f);
-    float topH = std::ceil(height_ / 2.0f);
-    float bottomH = std::floor(height_ / 2.0f);
+    // Split into 4 equal quadrants (float-based) to avoid uneven corner sizes (17 / 2 = 8.5).
+    const float leftW = width_ / 2.0f;
+    const float rightW = width_ - leftW;
+    const float topH = height_ / 2.0f;
+    const float bottomH = height_ - topH;
 
     corners_[0] = Rectangle(position_.x, position_.y, leftW, topH);                  // Top-Left
     corners_[1] = Rectangle(position_.x + leftW, position_.y, rightW, topH);         // Top-Right

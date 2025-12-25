@@ -21,11 +21,11 @@ constexpr float SPAWN_INTERVAL_SECONDS = Constants::ENEMY_SPAWN_INTERVAL / 1000.
 namespace {
 PlayerInput readPlayer1Input(const IInput& input) {
     PlayerInput playerInput;
-    playerInput.up = input.isKeyDown(SDL_SCANCODE_W);
-    playerInput.down = input.isKeyDown(SDL_SCANCODE_S);
-    playerInput.left = input.isKeyDown(SDL_SCANCODE_A);
-    playerInput.right = input.isKeyDown(SDL_SCANCODE_D);
-    playerInput.fire = input.isKeyDown(SDL_SCANCODE_SPACE);
+    playerInput.up = input.isKeyDown(SDL_SCANCODE_W) || input.isKeyDown(SDLK_w);
+    playerInput.down = input.isKeyDown(SDL_SCANCODE_S) || input.isKeyDown(SDLK_s);
+    playerInput.left = input.isKeyDown(SDL_SCANCODE_A) || input.isKeyDown(SDLK_a);
+    playerInput.right = input.isKeyDown(SDL_SCANCODE_D) || input.isKeyDown(SDLK_d);
+    playerInput.fire = input.isKeyDown(SDL_SCANCODE_SPACE) || input.isKeyDown(SDLK_SPACE);
     return playerInput;
 }
 
