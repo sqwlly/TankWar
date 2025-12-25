@@ -1,4 +1,5 @@
 #include "input/InputManager.hpp"
+#include <algorithm>
 
 namespace tank {
 
@@ -46,9 +47,6 @@ void InputManager::processEvents() {
                 break;
 
             case SDL_KEYDOWN:
-                if (event.key.keysym.scancode < SDL_NUM_SCANCODES) {
-                    currentKeys_[event.key.keysym.scancode] = true;
-                }
                 if (!event.key.repeat) {
                     inputEvent.type = InputEvent::Type::KeyDown;
                     inputEvent.keycode = event.key.keysym.sym;
@@ -56,9 +54,6 @@ void InputManager::processEvents() {
                 break;
 
             case SDL_KEYUP:
-                if (event.key.keysym.scancode < SDL_NUM_SCANCODES) {
-                    currentKeys_[event.key.keysym.scancode] = false;
-                }
                 inputEvent.type = InputEvent::Type::KeyUp;
                 inputEvent.keycode = event.key.keysym.sym;
                 break;
@@ -114,6 +109,16 @@ void InputManager::processEvents() {
         currentMouseButtons_.fill(false);
         previousMouseButtons_.fill(false);
         return;
+    }
+
+    int numKeys = 0;
+    const uint8_t* keyboardState = SDL_GetKeyboardState(&numKeys);
+    const int copyCount = std::min(numKeys, static_cast<int>(SDL_NUM_SCANCODES));
+    for (int i = 0; i < copyCount; ++i) {
+        currentKeys_[i] = keyboardState[i] != 0;
+    }
+    for (int i = copyCount; i < SDL_NUM_SCANCODES; ++i) {
+        currentKeys_[i] = false;
     }
 }
 
