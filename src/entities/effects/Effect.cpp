@@ -1,5 +1,6 @@
 #include "entities/effects/Effect.hpp"
 #include "rendering/IRenderer.hpp"
+#include "graphics/SpriteSheet.hpp"
 
 namespace tank {
 
@@ -58,21 +59,14 @@ void SpawnEffect::render(IRenderer& renderer) {
     int y = static_cast<int>(position_.y);
     int size = Constants::ELEMENT_SIZE;
 
-    // Draw star-like spawn animation
+    // Use spawn sprite from sprite sheet
     int frame = animation_.getCurrentFrameIndex();
-    int offset = frame * 4;
+    Rectangle sprite = Sprites::Spawn::get(frame);
 
-    // Alternating pattern
-    if (frame % 2 == 0) {
-        renderer.drawRect(x + size/4 - offset, y + size/4 - offset,
-                         size/2 + offset*2, size/2 + offset*2,
-                         255, 255, 255, 200);
-    } else {
-        renderer.drawRect(x + size/3, y + size/3,
-                         size/3, size/3, 255, 255, 255, 255);
-        renderer.drawRect(x + 2, y + size/2 - 2, size - 4, 4, 255, 255, 255, 200);
-        renderer.drawRect(x + size/2 - 2, y + 2, 4, size - 4, 255, 255, 255, 200);
-    }
+    renderer.drawSprite(
+        static_cast<int>(sprite.x), static_cast<int>(sprite.y),
+        static_cast<int>(sprite.width), static_cast<int>(sprite.height),
+        x, y, size, size);
 }
 
 // BulletExplosion implementation
@@ -101,22 +95,14 @@ void BulletExplosion::render(IRenderer& renderer) {
     int y = static_cast<int>(position_.y);
     int size = Constants::ELEMENT_SIZE;
 
+    // Use small explosion sprite from sprite sheet
     int frame = animation_.getCurrentFrameIndex();
-    int radius = 4 + frame * 6;
+    Rectangle sprite = Sprites::Explosion::getSmall(frame);
 
-    // Draw expanding circle effect
-    int cx = x + size / 2;
-    int cy = y + size / 2;
-
-    // Orange/yellow explosion
-    renderer.drawRect(cx - radius, cy - radius, radius * 2, radius * 2,
-                     255, 200 - frame * 50, 0, 255 - frame * 50);
-
-    // Inner bright core
-    if (frame < 2) {
-        renderer.drawRect(cx - radius/2, cy - radius/2, radius, radius,
-                         255, 255, 200, 255);
-    }
+    renderer.drawSprite(
+        static_cast<int>(sprite.x), static_cast<int>(sprite.y),
+        static_cast<int>(sprite.width), static_cast<int>(sprite.height),
+        x, y, size, size);
 }
 
 // TankExplosion implementation
@@ -150,29 +136,14 @@ void TankExplosion::render(IRenderer& renderer) {
     int w = static_cast<int>(width_);
     int h = static_cast<int>(height_);
 
+    // Use big explosion sprite from sprite sheet
     int frame = animation_.getCurrentFrameIndex();
+    Rectangle sprite = Sprites::Explosion::getBig(frame);
 
-    // Large explosion effect
-    int cx = x + w / 2;
-    int cy = y + h / 2;
-
-    if (frame == 0) {
-        // First frame - expanding fireball
-        renderer.drawRect(cx - 24, cy - 24, 48, 48, 255, 100, 0, 255);
-        renderer.drawRect(cx - 16, cy - 16, 32, 32, 255, 200, 0, 255);
-        renderer.drawRect(cx - 8, cy - 8, 16, 16, 255, 255, 200, 255);
-    } else {
-        // Second frame - larger explosion with debris
-        renderer.drawRect(cx - 32, cy - 32, 64, 64, 200, 50, 0, 200);
-        renderer.drawRect(cx - 20, cy - 20, 40, 40, 255, 150, 0, 255);
-        renderer.drawRect(cx - 10, cy - 10, 20, 20, 255, 255, 100, 255);
-
-        // Debris particles
-        renderer.drawRect(cx - 28, cy - 8, 8, 8, 100, 100, 100, 255);
-        renderer.drawRect(cx + 20, cy - 12, 6, 6, 100, 100, 100, 255);
-        renderer.drawRect(cx - 4, cy + 22, 10, 6, 100, 100, 100, 255);
-        renderer.drawRect(cx + 16, cy + 18, 8, 8, 100, 100, 100, 255);
-    }
+    renderer.drawSprite(
+        static_cast<int>(sprite.x), static_cast<int>(sprite.y),
+        static_cast<int>(sprite.width), static_cast<int>(sprite.height),
+        x, y, w, h);
 }
 
 // InvincibilityEffect implementation
@@ -216,22 +187,14 @@ void InvincibilityEffect::render(IRenderer& renderer) {
     int y = static_cast<int>(position_.y);
     int size = Constants::ELEMENT_SIZE;
 
+    // Use shield sprite from sprite sheet
     int frame = animation_.getCurrentFrameIndex();
+    Rectangle sprite = Sprites::Shield::get(frame);
 
-    // Alternating shield pattern
-    if (frame == 0) {
-        // Outer ring
-        renderer.drawRect(x, y, size, 2, 255, 255, 255, 200);
-        renderer.drawRect(x, y + size - 2, size, 2, 255, 255, 255, 200);
-        renderer.drawRect(x, y, 2, size, 255, 255, 255, 200);
-        renderer.drawRect(x + size - 2, y, 2, size, 255, 255, 255, 200);
-    } else {
-        // Inner pattern
-        renderer.drawRect(x + 4, y + 4, size - 8, 2, 255, 255, 255, 180);
-        renderer.drawRect(x + 4, y + size - 6, size - 8, 2, 255, 255, 255, 180);
-        renderer.drawRect(x + 4, y + 4, 2, size - 8, 255, 255, 255, 180);
-        renderer.drawRect(x + size - 6, y + 4, 2, size - 8, 255, 255, 255, 180);
-    }
+    renderer.drawSprite(
+        static_cast<int>(sprite.x), static_cast<int>(sprite.y),
+        static_cast<int>(sprite.width), static_cast<int>(sprite.height),
+        x, y, size, size);
 }
 
 void InvincibilityEffect::setPosition(int x, int y) {

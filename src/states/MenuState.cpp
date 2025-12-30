@@ -1,5 +1,6 @@
 #include "states/MenuState.hpp"
 #include "states/GameStateManager.hpp"
+#include "graphics/SpriteSheet.hpp"
 #include "input/IInput.hpp"
 #include <iostream>
 #include <cmath>
@@ -67,31 +68,34 @@ void MenuState::renderBackground(IRenderer& renderer) {
 }
 
 void MenuState::renderDecorations(IRenderer& renderer) {
-    // Animated tank decorations on sides
+    // Animated tank decorations on sides using actual sprites
     float tank1Y = 300 + std::sin(animTimer_ * 1.5f) * 10.0f;
     float tank2Y = 320 + std::cos(animTimer_ * 1.5f) * 10.0f;
 
-    // Left tank (facing right)
-    int leftX = 40;
-    renderer.drawRect(leftX, static_cast<int>(tank1Y) + 8, 28, 18,
-                     Constants::UIColors::PLAYER1.r,
-                     Constants::UIColors::PLAYER1.g,
-                     Constants::UIColors::PLAYER1.b, 180);
-    renderer.drawRect(leftX + 20, static_cast<int>(tank1Y) + 12, 16, 10,
-                     Constants::UIColors::PLAYER1.r,
-                     Constants::UIColors::PLAYER1.g,
-                     Constants::UIColors::PLAYER1.b, 180);
+    // Animation frame based on timer
+    int animFrame = static_cast<int>(animTimer_ * 4.0f) % 2;
 
-    // Right tank (facing left)
+    // Left tank (Player 1, facing right)
+    int leftX = 40;
+    Rectangle p1Sprite = Sprites::Tank::getFrame(
+        Sprites::Tank::P1_BASE_Y,
+        Sprites::Tank::DIR_RIGHT_COL,
+        animFrame, 0);
+    renderer.drawSprite(
+        static_cast<int>(p1Sprite.x), static_cast<int>(p1Sprite.y),
+        static_cast<int>(p1Sprite.width), static_cast<int>(p1Sprite.height),
+        leftX, static_cast<int>(tank1Y), 40, 40);
+
+    // Right tank (Player 2, facing left)
     int rightX = Constants::WINDOW_WIDTH - 80;
-    renderer.drawRect(rightX, static_cast<int>(tank2Y) + 8, 28, 18,
-                     Constants::UIColors::PLAYER2.r,
-                     Constants::UIColors::PLAYER2.g,
-                     Constants::UIColors::PLAYER2.b, 180);
-    renderer.drawRect(rightX - 8, static_cast<int>(tank2Y) + 12, 16, 10,
-                     Constants::UIColors::PLAYER2.r,
-                     Constants::UIColors::PLAYER2.g,
-                     Constants::UIColors::PLAYER2.b, 180);
+    Rectangle p2Sprite = Sprites::Tank::getFrame(
+        Sprites::Tank::P2_BASE_Y,
+        Sprites::Tank::DIR_LEFT_COL,
+        animFrame, 0);
+    renderer.drawSprite(
+        static_cast<int>(p2Sprite.x), static_cast<int>(p2Sprite.y),
+        static_cast<int>(p2Sprite.width), static_cast<int>(p2Sprite.height),
+        rightX, static_cast<int>(tank2Y), 40, 40);
 
     // Battle smoke/explosion decorations
     for (int i = 0; i < 3; ++i) {

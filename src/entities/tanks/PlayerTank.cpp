@@ -15,9 +15,7 @@ PlayerTank::PlayerTank(int playerId, const Vector2& spawnPosition)
 }
 
 void PlayerTank::handleInput(const PlayerInput& input) {
-    if (spawning_) {
-        return;
-    }
+    // Allow input even during spawn animation (removed spawning_ check)
 
     // Movement
     if (input.up) {

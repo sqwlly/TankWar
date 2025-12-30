@@ -21,14 +21,12 @@ Rectangle Tank::getBounds() const {
 void Tank::update(float deltaTime) {
     if (!active_) return;
 
-    // Handle spawn animation
+    // Handle spawn animation timer (but don't block other updates)
     if (spawning_) {
         spawnTimer_ -= deltaTime;
         if (spawnTimer_ <= 0) {
             spawning_ = false;
-            std::cout << "[Tank] Spawn animation complete, now controllable" << std::endl;
         }
-        return;
     }
 
     // Update animation frame when moving
@@ -44,8 +42,12 @@ void Tank::update(float deltaTime) {
 void Tank::render(IRenderer& renderer) {
     if (!active_) return;
 
-    // During spawning, render spawn effect
+    // During spawning, render spawn effect overlay on top of tank
     if (spawning_) {
+        // First render the tank
+        onRender(renderer);
+
+        // Then render spawn effect on top
         int spawnFrame = static_cast<int>((Constants::SPAWN_ANIMATION_FRAMES -
             spawnTimer_ / (Constants::SPAWN_ANIMATION_DELAY / 1000.0f))) % 4;
         Rectangle srcRect = Sprites::Spawn::get(spawnFrame);
@@ -59,7 +61,7 @@ void Tank::render(IRenderer& renderer) {
         return;
     }
 
-    // Let subclass render the actual tank sprite
+    // Normal rendering
     onRender(renderer);
 }
 

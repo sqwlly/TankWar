@@ -2,6 +2,7 @@
 
 #include "utils/Vector2.hpp"
 #include "utils/Constants.hpp"
+#include "graphics/SpriteSheet.hpp"
 #include <vector>
 
 namespace tank {
@@ -12,6 +13,7 @@ class IRenderer;
  * @brief Game HUD (Heads-Up Display) with improved visual design
  *
  * Features:
+ * - Uses actual sprite sheet icons for authentic look
  * - Animated enemy icons with pulse effect
  * - Health bar with color gradient
  * - Player info section with icons
@@ -54,8 +56,8 @@ private:
     // UI Layout constants
     static constexpr int PANEL_X = Constants::GAME_WIDTH;
     static constexpr int PANEL_WIDTH = Constants::UI_PANEL_WIDTH;
-    static constexpr int ICON_SIZE = 14;
-    static constexpr int ICON_SPACING = 3;
+    static constexpr int ICON_SIZE = 16;  // Display size for icons
+    static constexpr int ICON_SPACING = 2;
     static constexpr int PADDING = 8;
 
     void renderPanelBackground(IRenderer& renderer);
@@ -64,10 +66,6 @@ private:
     void renderHealthBar(IRenderer& renderer, int x, int y, int hp, int maxHP);
     void renderLevelInfo(IRenderer& renderer);
     void renderScoreDisplay(IRenderer& renderer);
-
-    // Helper to draw a stylized tank icon
-    void drawTankIcon(IRenderer& renderer, int x, int y, int size, const Constants::Color& color);
-    void drawEnemyIcon(IRenderer& renderer, int x, int y, int size, bool glow);
 };
 
 /**
