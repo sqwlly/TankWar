@@ -79,13 +79,102 @@ struct Color {
 
     constexpr Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255)
         : r(r), g(g), b(b), a(a) {}
+
+    // Utility: interpolate between two colors
+    static constexpr Color lerp(const Color& a, const Color& b, float t) {
+        return Color(
+            static_cast<uint8_t>(a.r + (b.r - a.r) * t),
+            static_cast<uint8_t>(a.g + (b.g - a.g) * t),
+            static_cast<uint8_t>(a.b + (b.b - a.b) * t),
+            static_cast<uint8_t>(a.a + (b.a - a.a) * t)
+        );
+    }
+
+    // Utility: darken color
+    constexpr Color darken(float factor) const {
+        return Color(
+            static_cast<uint8_t>(r * (1.0f - factor)),
+            static_cast<uint8_t>(g * (1.0f - factor)),
+            static_cast<uint8_t>(b * (1.0f - factor)),
+            a
+        );
+    }
+
+    // Utility: lighten color
+    constexpr Color lighten(float factor) const {
+        return Color(
+            static_cast<uint8_t>(r + (255 - r) * factor),
+            static_cast<uint8_t>(g + (255 - g) * factor),
+            static_cast<uint8_t>(b + (255 - b) * factor),
+            a
+        );
+    }
+
+    // Utility: with alpha
+    constexpr Color withAlpha(uint8_t newAlpha) const {
+        return Color(r, g, b, newAlpha);
+    }
 };
 
+// Base colors
 constexpr Color COLOR_BLACK{0, 0, 0};
 constexpr Color COLOR_WHITE{255, 255, 255};
 constexpr Color COLOR_GRAY{99, 99, 99};      // #636363 from original
 constexpr Color COLOR_RED{255, 0, 0};
 constexpr Color COLOR_GREEN{0, 255, 0};
+
+// UI Color Palette - Retro Arcade Theme
+namespace UIColors {
+    // Primary colors
+    constexpr Color PRIMARY{218, 165, 32};       // Gold - main accent
+    constexpr Color SECONDARY{70, 130, 180};     // Steel blue
+    constexpr Color ACCENT{255, 99, 71};         // Tomato red
+
+    // Backgrounds
+    constexpr Color BG_DARK{20, 20, 25};         // Near black
+    constexpr Color BG_PANEL{40, 44, 52};        // Dark gray panel
+    constexpr Color BG_OVERLAY{0, 0, 0, 180};    // Semi-transparent overlay
+
+    // HUD Colors
+    constexpr Color HP_HIGH{50, 205, 50};        // Lime green
+    constexpr Color HP_MED{255, 165, 0};         // Orange
+    constexpr Color HP_LOW{220, 20, 60};         // Crimson
+    constexpr Color HP_BG{60, 60, 60};           // HP bar background
+
+    // Player colors
+    constexpr Color PLAYER1{255, 215, 0};        // Gold yellow
+    constexpr Color PLAYER2{0, 191, 255};        // Deep sky blue
+
+    // Enemy indicator
+    constexpr Color ENEMY_ICON{180, 0, 0};       // Dark red
+    constexpr Color ENEMY_ICON_GLOW{255, 60, 60};// Glowing red
+
+    // Menu colors
+    constexpr Color MENU_HIGHLIGHT{255, 215, 0}; // Gold highlight
+    constexpr Color MENU_NORMAL{180, 180, 180};  // Gray text
+    constexpr Color MENU_DISABLED{80, 80, 80};   // Dark gray
+
+    // Title gradient (top to bottom)
+    constexpr Color TITLE_TOP{255, 200, 50};     // Bright gold
+    constexpr Color TITLE_BOTTOM{200, 100, 0};   // Dark orange
+
+    // Stage transition
+    constexpr Color STAGE_BG{60, 60, 60};
+    constexpr Color STAGE_TEXT{255, 255, 255};
+    constexpr Color STAGE_ACCENT{255, 180, 0};
+}
+
+// UI Layout constants
+namespace UILayout {
+    constexpr int HUD_PADDING = 8;
+    constexpr int HUD_ICON_SIZE = 14;
+    constexpr int HUD_ICON_GAP = 3;
+    constexpr int HP_BAR_WIDTH = 48;
+    constexpr int HP_BAR_HEIGHT = 6;
+    constexpr int MENU_ITEM_GAP = 32;
+    constexpr int TITLE_Y = 80;
+    constexpr int MENU_START_Y_OFFSET = 180;
+}
 
 // Asset paths
 namespace Paths {
