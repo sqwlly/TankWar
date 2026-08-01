@@ -91,6 +91,9 @@ bool GameStateManager::loadProgress(const std::string& filePath) {
     progressStore_ = ProgressStore(filePath);
     progress_ = progressStore_.load();
     progressLoaded_ = true;
+    if (progress_.masterVolume > 0.0f) {
+        volumeBeforeMute_ = progress_.masterVolume;
+    }
     if (ServiceLocator::hasAudio()) {
         ServiceLocator::getAudio().setMasterVolume(progress_.masterVolume);
     }
@@ -122,10 +125,23 @@ void GameStateManager::setDifficulty(GameDifficulty difficulty) {
 
 void GameStateManager::setMasterVolume(float volume) {
     progress_.masterVolume = std::clamp(volume, 0.0f, 1.0f);
+    if (progress_.masterVolume > 0.0f) {
+        volumeBeforeMute_ = progress_.masterVolume;
+    }
     if (ServiceLocator::hasAudio()) {
         ServiceLocator::getAudio().setMasterVolume(progress_.masterVolume);
     }
     saveProgress();
+}
+
+void GameStateManager::toggleMute() {
+    if (isMuted()) {
+        setMasterVolume(volumeBeforeMute_);
+        return;
+    }
+
+    volumeBeforeMute_ = progress_.masterVolume;
+    setMasterVolume(0.0f);
 }
 
 void GameStateManager::saveProgress() {

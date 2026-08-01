@@ -117,16 +117,24 @@ void StageState::renderStageInfo(IRenderer& renderer) {
     // Only render if curtain is partially open
     if (curtainProgress_ < 0.2f) return;
 
-    // Stage text with scale animation
-    float scale = textScale_;
-    int textSize = static_cast<int>(28 * scale);
-    if (textSize < 8) textSize = 8;
+    // Start near the final size so the text remains legible while it settles.
+    const float reveal = textScale_;
+    const float easedReveal = 1.0f - std::pow(1.0f - reveal, 3.0f);
+    const float scale = 0.75f + 0.25f * easedReveal;
+    const int textSize = static_cast<int>(28 * scale);
 
     // Glow effect behind text
-    if (scale > 0.5f) {
-        uint8_t glowAlpha = static_cast<uint8_t>((50 + 30 * std::sin(glowPulse_)) * scale);
-        int glowSize = static_cast<int>(200 * scale);
-        renderer.drawRect(centerX - glowSize / 2, centerY - 40, glowSize, 80,
+    if (reveal > 0.0f) {
+        constexpr int HIGHLIGHT_WIDTH = 160;
+        constexpr int HIGHLIGHT_HEIGHT = 112;
+        constexpr int HIGHLIGHT_CENTER_Y_OFFSET = 6;
+        const uint8_t glowAlpha = static_cast<uint8_t>(
+            (50 + 30 * std::sin(glowPulse_)) * reveal);
+        const int glowWidth = static_cast<int>(HIGHLIGHT_WIDTH * scale);
+        const int glowHeight = static_cast<int>(HIGHLIGHT_HEIGHT * scale);
+        const int glowCenterY = centerY + HIGHLIGHT_CENTER_Y_OFFSET;
+        renderer.drawRect(centerX - glowWidth / 2, glowCenterY - glowHeight / 2,
+                         glowWidth, glowHeight,
                          Constants::UIColors::STAGE_ACCENT.r,
                          Constants::UIColors::STAGE_ACCENT.g,
                          Constants::UIColors::STAGE_ACCENT.b, glowAlpha);
@@ -141,8 +149,7 @@ void StageState::renderStageInfo(IRenderer& renderer) {
 
     // Stage number (larger)
     std::string stageNum = std::to_string(levelNumber_);
-    int numSize = static_cast<int>(48 * scale);
-    if (numSize < 12) numSize = 12;
+    const int numSize = static_cast<int>(48 * scale);
 
     // Number with accent color
     Vector2 numSizeVec = renderer.measureText(stageNum, numSize);
@@ -151,8 +158,8 @@ void StageState::renderStageInfo(IRenderer& renderer) {
                      Constants::UIColors::STAGE_ACCENT, numSize);
 
     // Decorative lines
-    if (scale > 0.8f) {
-        uint8_t lineAlpha = static_cast<uint8_t>(180 * (scale - 0.8f) * 5.0f);
+    if (reveal > 0.8f) {
+        uint8_t lineAlpha = static_cast<uint8_t>(180 * (reveal - 0.8f) * 5.0f);
         int lineWidth = static_cast<int>(120 * scale);
 
         // Top line
@@ -169,9 +176,9 @@ void StageState::renderStageInfo(IRenderer& renderer) {
     }
 
     // Mode indicator (survival or campaign)
-    if (scale > 0.9f) {
+    if (reveal > 0.9f) {
         const char* modeText = useWaveGenerator_ ? "SURVIVAL MODE" : "CAMPAIGN";
-        uint8_t modeAlpha = static_cast<uint8_t>(150 * (scale - 0.9f) * 10.0f);
+        uint8_t modeAlpha = static_cast<uint8_t>(150 * (reveal - 0.9f) * 10.0f);
         Vector2 modeSize = renderer.measureText(modeText, 12);
         renderer.drawText(modeText,
                          Vector2(centerX - modeSize.x / 2.0f, static_cast<float>(centerY + 70)),

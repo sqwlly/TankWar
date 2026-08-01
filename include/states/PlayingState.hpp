@@ -156,6 +156,13 @@ private:
     void detachBulletsFromTank(ITank* tank);
     void detachAllBulletOwners();
     bool isTankSpawnAreaFree(const Vector2& position) const;
+    // True if any living tank (players or enemies) overlaps the given area.
+    bool isAnyTankOverlapping(const Rectangle& area) const;
+    // Removes tank-blocking terrain (brick/steel/water) from the cells under
+    // every spawn point. Player tanks spawn unconditionally and the enemy
+    // spawner deadlocks when all its points are blocked, so spawn cells must
+    // be sacred: call after loading the map, before createTerrain().
+    void clearSpawnAreaTerrain();
 
     void applyPowerUp(PlayerTank& player, PowerUpType type);
     void fortifyBase();

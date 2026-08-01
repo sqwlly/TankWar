@@ -9,6 +9,7 @@
 
 #include "states/GameStateManager.hpp"
 #include "states/MenuState.hpp"
+#include "mocks/MockRenderer.hpp"
 #include "mocks/ScriptedInput.hpp"
 
 namespace tank::test {
@@ -124,6 +125,25 @@ TEST(CampaignFirstLevelFlowTest, VictoryFromLevel1TransitionsToStage2ThenPlaying
     EXPECT_FALSE(playing2->useWaveGenerator_);
     EXPECT_EQ(static_cast<int>(playing2->level_->getEnemySpawnCount()), 20)
         << "assets/levels/Level_2 first line defines 20 enemies";
+}
+
+TEST(StageTransitionVisualTest, HighlightBoundsCoverStageContentWithoutExcessWidth) {
+    GameStateManager manager;
+    StageState stage(manager, 15, /*twoPlayer=*/false, /*useWaveGenerator=*/false);
+    stage.curtainProgress_ = 1.0f;
+    stage.textScale_ = 1.0f;
+    stage.glowPulse_ = 0.0f;
+
+    MockRenderer renderer;
+    stage.renderStageInfo(renderer);
+
+    const auto& rects = renderer.getRectCalls();
+    ASSERT_GE(rects.size(), 3u);
+    const auto& highlight = rects.front();
+    EXPECT_EQ(highlight.x, (Constants::WINDOW_WIDTH - 160) / 2);
+    EXPECT_EQ(highlight.y, Constants::WINDOW_HEIGHT / 2 + 6 - 112 / 2);
+    EXPECT_EQ(highlight.w, 160);
+    EXPECT_EQ(highlight.h, 112);
 }
 
 } // namespace tank::test

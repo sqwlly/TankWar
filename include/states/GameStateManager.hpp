@@ -71,10 +71,12 @@ public:
     int getCampaignStartLevel() const { return progress_.levelToPlay; }
     GameDifficulty getDifficulty() const { return progress_.difficulty; }
     float getMasterVolume() const { return progress_.masterVolume; }
+    bool isMuted() const { return progress_.masterVolume <= 0.0001f; }
     void recordHighScore(int score);
     void unlockCampaignLevel(int completedLevel);
     void setDifficulty(GameDifficulty difficulty);
     void setMasterVolume(float volume);
+    void toggleMute();
 
 private:
     std::stack<std::unique_ptr<IGameState>> states_;
@@ -94,6 +96,7 @@ private:
     ProgressStore progressStore_;
     ProgressData progress_;
     bool progressLoaded_ = false;
+    float volumeBeforeMute_ = 1.0f;
 
     void processPendingOperations();
     void saveProgress();

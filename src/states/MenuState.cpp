@@ -52,9 +52,10 @@ void MenuState::update(float deltaTime) {
 
 void MenuState::render(IRenderer& renderer) {
     renderBackground(renderer);
-    renderDecorations(renderer);
     renderTitle(renderer);
     renderMenuItems(renderer);
+    renderPlayerMode(renderer);
+    renderMuteButton(renderer);
     renderFooter(renderer);
     if (settingsOpen_) {
         renderSettings(renderer);
@@ -66,35 +67,6 @@ void MenuState::renderBackground(IRenderer& renderer) {
         Constants::UIColors::BG_DARK.r,
         Constants::UIColors::BG_DARK.g,
         Constants::UIColors::BG_DARK.b, 255);
-}
-
-void MenuState::renderDecorations(IRenderer& renderer) {
-    // Animated tanks flanking the menu panel, facing each other
-    const int tankY = MENU_START_Y + MENU_ITEM_HEIGHT - 17;
-    float bob = std::sin(animTimer_ * 1.5f) * 6.0f;
-    int animFrame = static_cast<int>(animTimer_ * 4.0f) % 2;
-
-    const int panelX = (Constants::WINDOW_WIDTH - MENU_PANEL_WIDTH) / 2;
-
-    // Left tank (Player 1, facing right)
-    Rectangle p1Sprite = Sprites::Tank::getFrame(
-        Sprites::Tank::P1_BASE_Y,
-        Sprites::Tank::DIR_RIGHT_COL,
-        animFrame, 0);
-    renderer.drawSprite(
-        static_cast<int>(p1Sprite.x), static_cast<int>(p1Sprite.y),
-        static_cast<int>(p1Sprite.width), static_cast<int>(p1Sprite.height),
-        panelX - 70, tankY + static_cast<int>(bob), 40, 40);
-
-    // Right tank (Player 2, facing left)
-    Rectangle p2Sprite = Sprites::Tank::getFrame(
-        Sprites::Tank::P2_BASE_Y,
-        Sprites::Tank::DIR_LEFT_COL,
-        animFrame, 0);
-    renderer.drawSprite(
-        static_cast<int>(p2Sprite.x), static_cast<int>(p2Sprite.y),
-        static_cast<int>(p2Sprite.width), static_cast<int>(p2Sprite.height),
-        panelX + MENU_PANEL_WIDTH + 30, tankY - static_cast<int>(bob), 40, 40);
 }
 
 void MenuState::renderTitle(IRenderer& renderer) {
@@ -128,11 +100,15 @@ void MenuState::renderTitle(IRenderer& renderer) {
 }
 
 void MenuState::renderMenuItems(IRenderer& renderer) {
-    const std::string campaignLabel = "CONTINUE STAGE " + std::to_string(stateManager_.getCampaignStartLevel());
-    const char* items[] = { campaignLabel.c_str(), "SURVIVAL", "SETTINGS" };
+    const int campaignStartLevel = stateManager_.getCampaignStartLevel();
+    const char* campaignLabel = campaignStartLevel > 1 ? "CONTINUE" : "CAMPAIGN";
+    const std::string campaignDescription = campaignStartLevel > 1
+        ? "Resume campaign at Stage " + std::to_string(campaignStartLevel)
+        : "Play through 20 stages";
+    const char* items[] = { campaignLabel, "SURVIVAL", "SETTINGS" };
 
     const char* descriptions[] = {
-        "Play through 20 stages",
+        campaignDescription.c_str(),
         "Endless wave mode",
         "Volume, difficulty and controls"
     };
@@ -172,23 +148,8 @@ void MenuState::renderMenuItems(IRenderer& renderer) {
                              static_cast<float>(MENU_START_Y + MENU_ITEM_COUNT * MENU_ITEM_HEIGHT + 6)),
                      Constants::Color(120, 120, 120), 11);
 
-    // Player mode toggle, centered as "MODE: " + value
-    int modeY = MENU_START_Y + MENU_ITEM_COUNT * MENU_ITEM_HEIGHT + 34;
-    const char* modeLabel = "MODE: ";
-    const char* modeValue = twoPlayerMode_ ? "2 PLAYERS" : "1 PLAYER";
-    Constants::Color modeColor = twoPlayerMode_
-        ? Constants::UIColors::PLAYER2
-        : Constants::UIColors::PLAYER1;
-
-    Vector2 labelSize = renderer.measureText(modeLabel, 14);
-    Vector2 valueSize = renderer.measureText(modeValue, 14);
-    float modeX = (Constants::WINDOW_WIDTH - labelSize.x - valueSize.x) / 2.0f;
-    renderer.drawText(modeLabel, Vector2(modeX, static_cast<float>(modeY)),
-                     Constants::Color(100, 100, 100), 14);
-    renderer.drawText(modeValue, Vector2(modeX + labelSize.x, static_cast<float>(modeY)),
-                     modeColor, 14);
-
     // Construction mode hint
+    const int modeY = MENU_START_Y + MENU_ITEM_COUNT * MENU_ITEM_HEIGHT + 34;
     const char* hint = "C - CONSTRUCTION";
     Vector2 hintSize = renderer.measureText(hint, 12);
     renderer.drawText(hint,
@@ -197,20 +158,76 @@ void MenuState::renderMenuItems(IRenderer& renderer) {
                      Constants::Color(80, 80, 80), 12);
 }
 
-void MenuState::renderCursor(IRenderer& renderer, int x, int y) {
-    // Tank sprite cursor with a gentle horizontal bob
-    float bounce = std::sin(cursorPulse_) * 3.0f;
-    int cursorX = x + static_cast<int>(bounce);
-    int animFrame = static_cast<int>(animTimer_ * 4.0f) % 2;
+void MenuState::renderPlayerMode(IRenderer& renderer) {
+    constexpr int ICON_SIZE = 26;
+    constexpr int ICON_GAP = 4;
+    constexpr int TEXT_GAP = 10;
+    constexpr int TEXT_SIZE = 14;
 
-    Rectangle sprite = Sprites::Tank::getFrame(
-        Sprites::Tank::P1_BASE_Y,
-        Sprites::Tank::DIR_RIGHT_COL,
-        animFrame, 0);
+    const int modeY = MENU_START_Y + MENU_ITEM_COUNT * MENU_ITEM_HEIGHT + 34;
+    const char* modeLabel = "MODE: ";
+    const char* modeValue = twoPlayerMode_ ? "2 PLAYERS" : "1 PLAYER";
+    const Constants::Color modeColor = twoPlayerMode_
+        ? Constants::UIColors::PLAYER2
+        : Constants::UIColors::PLAYER1;
+    const Vector2 labelSize = renderer.measureText(modeLabel, TEXT_SIZE);
+    const Vector2 valueSize = renderer.measureText(modeValue, TEXT_SIZE);
+
+    const int playerCount = twoPlayerMode_ ? 2 : 1;
+    const int iconsWidth = playerCount * ICON_SIZE + (playerCount - 1) * ICON_GAP;
+    const int textWidth = static_cast<int>(labelSize.x + valueSize.x);
+    const int groupWidth = iconsWidth + TEXT_GAP + textWidth;
+    const int groupX = (Constants::WINDOW_WIDTH - groupWidth) / 2;
+    const int tankY = modeY + (TEXT_SIZE - ICON_SIZE) / 2;
+    const int animFrame = static_cast<int>(animTimer_ * 4.0f) % 2;
+
+    const Rectangle p1Sprite = Sprites::Tank::getFrame(
+        Sprites::Tank::P1_BASE_Y, Sprites::Tank::DIR_UP_COL, animFrame, 0);
     renderer.drawSprite(
-        static_cast<int>(sprite.x), static_cast<int>(sprite.y),
-        static_cast<int>(sprite.width), static_cast<int>(sprite.height),
-        cursorX, y - 4, 32, 32);
+        static_cast<int>(p1Sprite.x), static_cast<int>(p1Sprite.y),
+        static_cast<int>(p1Sprite.width), static_cast<int>(p1Sprite.height),
+        groupX, tankY, ICON_SIZE, ICON_SIZE);
+
+    if (twoPlayerMode_) {
+        const Rectangle p2Sprite = Sprites::Tank::getFrame(
+            Sprites::Tank::P2_BASE_Y, Sprites::Tank::DIR_UP_COL, animFrame, 0);
+        renderer.drawSprite(
+            static_cast<int>(p2Sprite.x), static_cast<int>(p2Sprite.y),
+            static_cast<int>(p2Sprite.width), static_cast<int>(p2Sprite.height),
+            groupX + ICON_SIZE + ICON_GAP, tankY, ICON_SIZE, ICON_SIZE);
+    }
+
+    const float textX = static_cast<float>(groupX + iconsWidth + TEXT_GAP);
+    renderer.drawText(modeLabel, Vector2(textX, static_cast<float>(modeY)),
+                     Constants::Color(100, 100, 100), TEXT_SIZE);
+    renderer.drawText(modeValue, Vector2(textX + labelSize.x, static_cast<float>(modeY)),
+                     modeColor, TEXT_SIZE);
+}
+
+void MenuState::renderMuteButton(IRenderer& renderer) {
+    const bool muted = stateManager_.isMuted();
+    const Constants::Color background = muted
+        ? Constants::Color(92, 34, 38)
+        : Constants::UIColors::BG_PANEL;
+    renderer.drawRect(MUTE_BUTTON_X, MUTE_BUTTON_Y, MUTE_BUTTON_WIDTH, MUTE_BUTTON_HEIGHT,
+                     background.r, background.g, background.b, 255);
+
+    const char* label = muted ? "M: MUTED" : "M: SOUND";
+    const Vector2 labelSize = renderer.measureText(label, 11);
+    renderer.drawText(
+        label,
+        Vector2(MUTE_BUTTON_X + (MUTE_BUTTON_WIDTH - labelSize.x) / 2.0f,
+                MUTE_BUTTON_Y + (MUTE_BUTTON_HEIGHT - labelSize.y) / 2.0f),
+        muted ? Constants::Color(255, 150, 150) : Constants::UIColors::MENU_NORMAL,
+        11);
+}
+
+void MenuState::renderCursor(IRenderer& renderer, int x, int y) {
+    // Keep navigation separate from the visual player count.
+    float bounce = std::sin(cursorPulse_) * 3.0f;
+    const int cursorX = x + static_cast<int>(bounce);
+    renderer.drawText(">", Vector2(static_cast<float>(cursorX), static_cast<float>(y - 3)),
+                     Constants::UIColors::MENU_HIGHLIGHT, 22);
 }
 
 void MenuState::renderFooter(IRenderer& renderer) {
@@ -232,6 +249,19 @@ void MenuState::renderFooter(IRenderer& renderer) {
 }
 
 void MenuState::handleInput(const IInput& input) {
+    const bool muteClick = input.isMouseButtonPressed(SDL_BUTTON_LEFT) &&
+        input.getMouseX() >= MUTE_BUTTON_X &&
+        input.getMouseX() < MUTE_BUTTON_X + MUTE_BUTTON_WIDTH &&
+        input.getMouseY() >= MUTE_BUTTON_Y &&
+        input.getMouseY() < MUTE_BUTTON_Y + MUTE_BUTTON_HEIGHT;
+    if (input.isKeyPressed(SDL_SCANCODE_M) || muteClick) {
+        stateManager_.toggleMute();
+        if (!stateManager_.isMuted()) {
+            playMenuSfx(SoundId::MenuConfirm);
+        }
+        return;
+    }
+
     if (settingsOpen_) {
         handleSettingsInput(input);
         return;

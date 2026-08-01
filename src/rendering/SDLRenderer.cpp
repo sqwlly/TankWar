@@ -57,6 +57,11 @@ bool SDLRenderer::initialize(const std::string& title, int width, int height) {
         return false;
     }
 
+    // UI overlays and transition effects rely on per-draw alpha values.
+    if (SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND) != 0) {
+        std::cerr << "Failed to enable alpha blending: " << SDL_GetError() << std::endl;
+    }
+
     // Set default font path
     defaultFontPath_ = "assets/joystix.ttf";
 

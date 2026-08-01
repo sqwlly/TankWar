@@ -11,12 +11,61 @@
 
 #include "core/Game.hpp"
 #include <SDL.h>  // Required for SDL_main handling on Windows
-#include <iostream>
 #include <exception>
+#include <filesystem>
+#include <iostream>
+#include <system_error>
+
+namespace {
+
+bool hasRuntimeAssets(const std::filesystem::path& root) {
+    std::error_code error;
+    const bool hasFont = std::filesystem::is_regular_file(root / "assets" / "joystix.ttf", error);
+    if (error || !hasFont) {
+        return false;
+    }
+
+    error.clear();
+    return std::filesystem::is_regular_file(
+        root / "assets" / "images" / "tank_sprite.png", error) && !error;
+}
+
+void configureRuntimeWorkingDirectory() {
+    std::error_code error;
+    const std::filesystem::path currentDirectory = std::filesystem::current_path(error);
+    if (!error && hasRuntimeAssets(currentDirectory)) {
+        return;
+    }
+
+    char* basePath = SDL_GetBasePath();
+    if (!basePath) {
+        std::cerr << "Unable to locate the executable directory: " << SDL_GetError() << std::endl;
+        return;
+    }
+
+    const std::filesystem::path executableDirectory = std::filesystem::u8path(basePath);
+    SDL_free(basePath);
+
+    if (!hasRuntimeAssets(executableDirectory)) {
+        std::cerr << "Runtime assets were not found beside the executable: "
+                  << executableDirectory << std::endl;
+        return;
+    }
+
+    std::filesystem::current_path(executableDirectory, error);
+    if (error) {
+        std::cerr << "Unable to use the executable directory for runtime assets: "
+                  << error.message() << std::endl;
+    }
+}
+
+} // namespace
 
 int main(int argc, char* argv[]) {
     (void)argc;
     (void)argv;
+
+    configureRuntimeWorkingDirectory();
 
     std::cout << "==================================" << std::endl;
     std::cout << "  Tank Battle - C++ Edition" << std::endl;

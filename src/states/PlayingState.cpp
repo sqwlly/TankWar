@@ -145,6 +145,7 @@ void PlayingState::loadLevel() {
     fortifiedCells_.clear();
     enemyDefeats_.clear();
 
+    clearSpawnAreaTerrain();
     createTerrain();
     createPlayers();
 
@@ -666,6 +667,13 @@ void PlayingState::fortifyBase() {
     }
 
     for (const FortifiedCell& cell : fortifiedCells_) {
+        // Never materialize a wall on top of a living tank - it would be
+        // buried inside the obstacle with no way out.
+        const Rectangle cellArea(cell.x * Constants::CELL_SIZE, cell.y * Constants::CELL_SIZE,
+                                 Constants::CELL_SIZE, Constants::CELL_SIZE);
+        if (isAnyTankOverlapping(cellArea)) {
+            continue;
+        }
         level_->setTerrainAt(cell.x, cell.y, TerrainType::Steel);
     }
     createTerrain();
@@ -682,6 +690,12 @@ void PlayingState::restoreFortifiedBase() {
     for (const FortifiedCell& cell : fortifiedCells_) {
         // Match the original game's behaviour: after the shield expires the
         // perimeter is rebuilt as brick, even if a protected cell was hit.
+        // Cells occupied by a living tank are skipped so nobody gets buried.
+        const Rectangle cellArea(cell.x * Constants::CELL_SIZE, cell.y * Constants::CELL_SIZE,
+                                 Constants::CELL_SIZE, Constants::CELL_SIZE);
+        if (isAnyTankOverlapping(cellArea)) {
+            continue;
+        }
         level_->setTerrainAt(cell.x, cell.y, TerrainType::Brick);
     }
     fortifiedCells_.clear();
@@ -1314,6 +1328,54 @@ bool PlayingState::isTankSpawnAreaFree(const Vector2& position) const {
     }
 
     return true;
+}
+
+bool PlayingState::isAnyTankOverlapping(const Rectangle& area) const {
+    if (player1_ && player1_->isAlive() && CollisionManager::checkAABB(area, player1_->getBounds())) {
+        return true;
+    }
+    if (player2_ && player2_->isAlive() && CollisionManager::checkAABB(area, player2_->getBounds())) {
+        return true;
+    }
+    for (const auto& enemy : enemies_) {
+        if (enemy->isAlive() && CollisionManager::checkAABB(area, enemy->getBounds())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void PlayingState::clearSpawnAreaTerrain() {
+    if (!level_) {
+        return;
+    }
+
+    const int cell = Constants::CELL_SIZE;
+    const int tankSize = Constants::TANK_COLLISION_SIZE;
+    const auto clearBlockingAt = [this, cell, tankSize](const Vector2& pos) {
+        // Half-cells touched by the tank collision box starting at pos.
+        const int x0 = static_cast<int>(pos.x) / cell;
+        const int y0 = static_cast<int>(pos.y) / cell;
+        const int x1 = (static_cast<int>(pos.x) + tankSize - 1) / cell;
+        const int y1 = (static_cast<int>(pos.y) + tankSize - 1) / cell;
+        for (int y = y0; y <= y1; ++y) {
+            for (int x = x0; x <= x1; ++x) {
+                const TerrainType type = level_->getTerrainAt(x, y);
+                if (type == TerrainType::Brick || type == TerrainType::Steel ||
+                    type == TerrainType::Water) {
+                    level_->setTerrainAt(x, y, TerrainType::Empty);
+                }
+            }
+        }
+    };
+
+    clearBlockingAt(level_->getPlayer1Spawn());
+    if (twoPlayerMode_) {
+        clearBlockingAt(level_->getPlayer2Spawn());
+    }
+    for (const Vector2& point : level_->getEnemySpawnPoints()) {
+        clearBlockingAt(point);
+    }
 }
 
 void PlayingState::checkTankTerrainCollisions() {

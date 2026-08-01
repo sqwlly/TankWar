@@ -2,6 +2,7 @@
 
 #include "states/GameStateManager.hpp"
 #include "states/MenuState.hpp"
+#include "mocks/MockRenderer.hpp"
 #include "mocks/ScriptedInput.hpp"
 
 #define private public
@@ -91,6 +92,55 @@ TEST(MenuStateModeSelectionTest, Toggle2PThenStartSurvivalCreatesPlayer2) {
     ASSERT_NE(playing, nullptr);
     EXPECT_TRUE(playing->twoPlayerMode_);
     EXPECT_NE(playing->player2_, nullptr);
+}
+
+TEST(MenuStateModeSelectionTest, MenuTankCountMatchesSelectedPlayerMode) {
+    GameStateManager manager;
+    MenuState menu(manager);
+    menu.enter();
+
+    MockRenderer renderer;
+    menu.render(renderer);
+    EXPECT_EQ(renderer.getDrawCallCount(), 1);
+    const auto onePlayerTank = renderer.getLastDrawCall();
+    EXPECT_GT(onePlayerTank.destX, 150);
+    EXPECT_EQ(onePlayerTank.destY, 356);
+    EXPECT_EQ(onePlayerTank.destW, 26);
+    EXPECT_EQ(onePlayerTank.destH, 26);
+
+    ScriptedInput input;
+    input.setKeyDown(SDL_SCANCODE_P, true);
+    menu.handleInput(input);
+
+    renderer.resetDrawCallCount();
+    menu.render(renderer);
+    EXPECT_EQ(renderer.getDrawCallCount(), 2);
+}
+
+TEST(MenuStateModeSelectionTest, MuteShortcutAndButtonRestorePreviousVolume) {
+    GameStateManager manager;
+    manager.setMasterVolume(0.6f);
+    MenuState menu(manager);
+    menu.enter();
+    ScriptedInput input;
+
+    input.setKeyDown(SDL_SCANCODE_M, true);
+    menu.handleInput(input);
+    EXPECT_TRUE(manager.isMuted());
+
+    input.advanceFrame();
+    input.setKeyDown(SDL_SCANCODE_M, false);
+    input.advanceFrame();
+    input.setKeyDown(SDL_SCANCODE_M, true);
+    menu.handleInput(input);
+    EXPECT_FALSE(manager.isMuted());
+    EXPECT_FLOAT_EQ(manager.getMasterVolume(), 0.6f);
+
+    input.reset();
+    input.setMousePosition(450, 20);
+    input.setMouseButtonDown(SDL_BUTTON_LEFT, true);
+    menu.handleInput(input);
+    EXPECT_TRUE(manager.isMuted());
 }
 
 } // namespace tank::test

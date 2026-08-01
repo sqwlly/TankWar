@@ -12,8 +12,9 @@ class GameStateManager;
  *
  * Layout:
  * - Brick-wall logo (assets/images/logo.png) centered at the top
- * - Menu items in a centered panel with a tank-sprite cursor
- * - Two decorative player tanks flanking the panel
+ * - Menu items in a centered panel with an animated arrow cursor
+ * - Player tank icons placed inline with the selected player mode
+ * - One-click mute control in the top-right corner
  */
 class MenuState : public IGameState {
 public:
@@ -66,6 +67,10 @@ private:
     static constexpr int MENU_START_Y = 196;
     static constexpr int MENU_ITEM_HEIGHT = 44;
     static constexpr int MENU_PANEL_WIDTH = 280;
+    static constexpr int MUTE_BUTTON_X = 412;
+    static constexpr int MUTE_BUTTON_Y = 12;
+    static constexpr int MUTE_BUTTON_WIDTH = 88;
+    static constexpr int MUTE_BUTTON_HEIGHT = 26;
 
     void selectNextItem();
     void selectPreviousItem();
@@ -76,7 +81,8 @@ private:
     void renderTitle(IRenderer& renderer);
     void renderMenuItems(IRenderer& renderer);
     void renderCursor(IRenderer& renderer, int x, int y);
-    void renderDecorations(IRenderer& renderer);
+    void renderPlayerMode(IRenderer& renderer);
+    void renderMuteButton(IRenderer& renderer);
     void renderFooter(IRenderer& renderer);
     void renderSettings(IRenderer& renderer);
 };
