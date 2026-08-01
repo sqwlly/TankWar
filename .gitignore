@@ -36,3 +36,7 @@ Thumbs.db
 build*/
 release/
 deps/
+
+# Tooling
+.claude/settings.local.json
+cmake_test_discovery_*.json

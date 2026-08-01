@@ -54,6 +54,7 @@ set(GAME_SOURCES
     ${SRC_DIR}/input/InputManager.cpp
     ${SRC_DIR}/ui/GameHUD.cpp
     ${SRC_DIR}/ai/AIBehavior.cpp
+    ${SRC_DIR}/utils/ProgressStore.cpp
 )
 
 # Create test executable
@@ -67,7 +68,8 @@ target_include_directories(TankGameTests PRIVATE
 target_link_libraries(TankGameTests PRIVATE
     GTest::gtest_main
     GTest::gmock
-    $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+    # NOTE: no SDL2::SDL2main here - it provides WinMain and requires the app to
+    # define SDL_main, but this binary's main() comes from gtest_main.
     $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,$<IF:$<TARGET_EXISTS:SDL2::SDL2-static>,SDL2::SDL2-static,SDL2>>
     $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,$<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image-static>,SDL2_image::SDL2_image-static,SDL2_image>>
     $<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer>,SDL2_mixer::SDL2_mixer,$<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer-static>,SDL2_mixer::SDL2_mixer-static,SDL2_mixer>>
@@ -79,3 +81,15 @@ include(GoogleTest)
 gtest_discover_tests(TankGameTests
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
+
+# Copy runtime DLLs next to the test executable (native MinGW only)
+if(WIN32 AND MINGW AND NOT CMAKE_CROSSCOMPILING AND NOT VCPKG_TOOLCHAIN)
+    add_custom_command(TARGET TankGameTests POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            -DEXE=$<TARGET_FILE:TankGameTests>
+            -DDEST=$<TARGET_FILE_DIR:TankGameTests>
+            -DDLL_DIRS=${MINGW_BIN_DIR}
+            -P "${CMAKE_SOURCE_DIR}/cmake/CopyRuntimeDLLs.cmake"
+        COMMENT "Copying runtime DLLs to test directory"
+    )
+endif()

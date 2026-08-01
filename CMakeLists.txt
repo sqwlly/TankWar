@@ -137,6 +137,20 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMENT "Copying assets to build directory"
 )
 
+# Native MinGW builds: copy runtime DLLs (SDL2 and its transitive deps) next to
+# the executable so it can be launched without the MSYS2 bin dir on PATH.
+if(WIN32 AND MINGW AND NOT CMAKE_CROSSCOMPILING AND NOT VCPKG_TOOLCHAIN)
+    get_filename_component(MINGW_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            -DEXE=$<TARGET_FILE:${PROJECT_NAME}>
+            -DDEST=$<TARGET_FILE_DIR:${PROJECT_NAME}>
+            -DDLL_DIRS=${MINGW_BIN_DIR}
+            -P "${CMAKE_SOURCE_DIR}/cmake/CopyRuntimeDLLs.cmake"
+        COMMENT "Copying runtime DLLs to build directory"
+    )
+endif()
+
 # Unit tests (optional)
 option(BUILD_TESTS "Build unit tests" OFF)
 if(BUILD_TESTS)
