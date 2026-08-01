@@ -35,6 +35,7 @@ void GameHUD::update(float deltaTime) {
 void GameHUD::render(IRenderer& renderer) {
     renderPanelBackground(renderer);
     renderEnemyIcons(renderer);
+    renderScoreDisplay(renderer);
     renderPlayerInfo(renderer, 1, PANEL_X + PADDING, Constants::WINDOW_HEIGHT - 130);
     if (twoPlayerMode_) {
         renderPlayerInfo(renderer, 2, PANEL_X + PADDING, Constants::WINDOW_HEIGHT - 70);
@@ -134,14 +135,11 @@ void GameHUD::renderLevelInfo(IRenderer& renderer) {
     int x = PANEL_X + PADDING;
     int y = Constants::WINDOW_HEIGHT - 44;
 
-    // Flag icon from sprite sheet
-    Rectangle flagSprite = Sprites::UI::getFlag();
-
-    renderer.drawSprite(
-        static_cast<int>(flagSprite.x), static_cast<int>(flagSprite.y),
-        static_cast<int>(flagSprite.width), static_cast<int>(flagSprite.height),
-        x, y, 20, 20
-    );
+    // Stage flag icon, drawn procedurally - the sprite sheet cell originally
+    // referenced (row 6, col 11) is empty.
+    renderer.drawRect(x + 2, y + 1, 2, 18, 80, 80, 80, 255);    // pole
+    renderer.drawRect(x + 4, y + 1, 12, 8, 220, 40, 40, 255);   // banner
+    renderer.drawRect(x, y + 19, 8, 2, 80, 80, 80, 255);        // base
 
     // Level number
     renderer.drawText(std::to_string(currentLevel_),
@@ -224,38 +222,39 @@ void GameOverOverlay::render(IRenderer& renderer) {
     renderer.drawRect(0, 0, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT,
                      0, 0, 0, 180);
 
-    // "GAME OVER" text
-    int textX = Constants::WINDOW_WIDTH / 2 - 80;
-
-    renderer.drawText("GAME", Vector2(static_cast<float>(textX), static_cast<float>(textY_)),
-                     Constants::COLOR_RED, 24);
-    renderer.drawText("OVER", Vector2(static_cast<float>(textX + 90), static_cast<float>(textY_)),
-                     Constants::COLOR_RED, 24);
+    // "GAME OVER" text, centered
+    const char* gameOverText = "GAME OVER";
+    Vector2 titleSize = renderer.measureText(gameOverText, 28);
+    renderer.drawText(gameOverText,
+                     Vector2((Constants::WINDOW_WIDTH - titleSize.x) / 2.0f, static_cast<float>(textY_)),
+                     Constants::COLOR_RED, 28);
 
     if (animationComplete_) {
         const char* items[] = {"RESTART", "MAIN MENU"};
         const int selectedIndex = static_cast<int>(selectedItem_);
-        const int menuX = Constants::WINDOW_WIDTH / 2 - 50;
-        const int menuY = textY_ + 50;
+        const int menuY = textY_ + 56;
         constexpr int ITEM_HEIGHT = 24;
 
         for (int i = 0; i < 2; ++i) {
             bool selected = (i == selectedIndex);
             Constants::Color color = selected ? Constants::COLOR_WHITE : Constants::COLOR_GRAY;
 
+            Vector2 itemSize = renderer.measureText(items[i], 16);
+            float itemX = (Constants::WINDOW_WIDTH - itemSize.x) / 2.0f;
+            float itemY = static_cast<float>(menuY + i * ITEM_HEIGHT);
+
             if (selected) {
-                renderer.drawText(">",
-                    Vector2(static_cast<float>(menuX - 18), static_cast<float>(menuY + i * ITEM_HEIGHT)),
-                    color, 16);
+                renderer.drawText(">", Vector2(itemX - 20.0f, itemY), color, 16);
             }
 
-            renderer.drawText(items[i],
-                Vector2(static_cast<float>(menuX), static_cast<float>(menuY + i * ITEM_HEIGHT)),
-                color, 16);
+            renderer.drawText(items[i], Vector2(itemX, itemY), color, 16);
         }
 
-        renderer.drawText("UP/DOWN: select  ENTER: confirm",
-            Vector2(static_cast<float>(menuX - 60), static_cast<float>(menuY + 2 * ITEM_HEIGHT + 15)),
+        const char* hint = "UP/DOWN: SELECT  ENTER: CONFIRM";
+        Vector2 hintSize = renderer.measureText(hint, 11);
+        renderer.drawText(hint,
+            Vector2((Constants::WINDOW_WIDTH - hintSize.x) / 2.0f,
+                    static_cast<float>(menuY + 2 * ITEM_HEIGHT + 15)),
             Constants::COLOR_GRAY, 11);
     }
 }
@@ -318,29 +317,32 @@ void PauseOverlay::render(IRenderer& renderer) {
     renderer.drawRect(0, 0, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT,
                      0, 0, 0, overlayAlpha);
 
-    int textX = Constants::WINDOW_WIDTH / 2 - 50;
+    // "PAUSE" text, centered
     int textY = Constants::WINDOW_HEIGHT / 2 - 80;
-
-    // "PAUSE" text
+    Vector2 titleSize = renderer.measureText("PAUSE", 28);
     renderer.drawText("PAUSE",
-                     Vector2(static_cast<float>(textX), static_cast<float>(textY)),
+                     Vector2((Constants::WINDOW_WIDTH - titleSize.x) / 2.0f, static_cast<float>(textY)),
                      Constants::COLOR_WHITE, 28);
 
-    // Menu items
+    // Menu items, centered
     const char* items[] = {"CONTINUE", "RESTART", "MAIN MENU"};
     const int selectedIndex = static_cast<int>(selectedItem_);
-    const int menuX = Constants::WINDOW_WIDTH / 2 - 60;
-    const int menuY = textY + 50;
+    const int menuY = textY + 56;
     constexpr int ITEM_HEIGHT = 24;
 
     for (int i = 0; i < 3; ++i) {
-        renderMenuItem(renderer, items[i], menuX, menuY + i * ITEM_HEIGHT,
+        Vector2 itemSize = renderer.measureText(items[i], 16);
+        float itemX = (Constants::WINDOW_WIDTH - itemSize.x) / 2.0f;
+        renderMenuItem(renderer, items[i], static_cast<int>(itemX), menuY + i * ITEM_HEIGHT,
                        i == selectedIndex, 0.0f);
     }
 
-    // Help text
-    renderer.drawText("UP/DOWN: select  ENTER: confirm  ESC: resume",
-        Vector2(static_cast<float>(menuX - 80), static_cast<float>(menuY + 3 * ITEM_HEIGHT + 15)),
+    // Help text, centered
+    const char* hint = "UP/DOWN: SELECT  ENTER: CONFIRM  ESC: RESUME";
+    Vector2 hintSize = renderer.measureText(hint, 11);
+    renderer.drawText(hint,
+        Vector2((Constants::WINDOW_WIDTH - hintSize.x) / 2.0f,
+                static_cast<float>(menuY + 3 * ITEM_HEIGHT + 15)),
         Constants::COLOR_GRAY, 11);
 }
 

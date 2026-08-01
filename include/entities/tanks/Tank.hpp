@@ -36,6 +36,10 @@ public:
     Direction getDirection() const override { return direction_; }
     void setDirection(Direction dir) override { direction_ = dir; }
 
+    // Internal movement (doesn't update previousPosition) for collision detection
+    void moveXInternal(float deltaX);
+    void moveYInternal(float deltaY);
+
     // IRenderable implementation
     void render(IRenderer& renderer) override;
     RenderLayer getRenderLayer() const override { return RenderLayer::Tanks; }
@@ -55,6 +59,7 @@ public:
     bool canShoot() const override { return bulletCount_ > 0; }
     void onBulletDestroyed() override;
     int getLevel() const override { return level_; }
+    void setLevel(int level);  // Implemented in Tank.cpp to handle upgrade effects
     void upgrade() override;
     void spawn(const Vector2& position) override;
     bool isSpawning() const override { return spawning_; }
@@ -63,6 +68,10 @@ public:
 
     // Stay in place (collision response)
     void stay();
+    Vector2 getPreviousPosition() const { return previousPosition_; }
+
+    // Force update previousPosition (used after collision resolution)
+    void updatePreviousPosition() { previousPosition_ = position_; }
 
 protected:
     // Subclass hooks
@@ -83,9 +92,10 @@ protected:
     float speed_ = Constants::PLAYER_DEFAULT_SPEED;
     Direction direction_ = Direction::Up;
 
-    // Dimensions
-    float width_ = Constants::ELEMENT_SIZE - 2;
-    float height_ = Constants::ELEMENT_SIZE - 2;
+    // Dimensions - collision box centered in visual sprite
+    // Visual: 34x34, Collision: 30x30 (2px margin on each side)
+    float width_ = Constants::TANK_COLLISION_SIZE;
+    float height_ = Constants::TANK_COLLISION_SIZE;
 
     // State
     bool active_ = true;

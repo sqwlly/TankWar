@@ -25,7 +25,7 @@ constexpr int HALF_SIZE = 17;
 
 constexpr int TANK_SIZE = ELEMENT_SIZE;
 constexpr int TERRAIN_SIZE = HALF_SIZE;
-constexpr int BULLET_SIZE = 10;
+constexpr int BULLET_SIZE = 8;  // Match sprite size
 constexpr int POWERUP_SIZE = ELEMENT_SIZE;
 constexpr int EXPLOSION_SIZE = ELEMENT_SIZE;
 constexpr int BIG_EXPLOSION_SIZE = ELEMENT_SIZE * 2;
@@ -65,8 +65,10 @@ namespace Tank {
  * Grass.java:  cut(4 * 34, 7 * 34, ...) -> Grass at (136, 238)
  */
 namespace Terrain {
-    // Brick wall - row 5, starting col 4 (from Tile.java)
-    constexpr int BRICK_X = 4 * ELEMENT_SIZE;   // 136
+    // Brick wall - full 16x16 brick tile at row 5, col 18 (verified in tank_sprite.png).
+    // BrickWall renders each alive 17x17 corner from this tile, so the
+    // destruction-variant tiles are not needed.
+    constexpr int BRICK_X = 18 * ELEMENT_SIZE;  // 612
     constexpr int BRICK_Y = 5 * ELEMENT_SIZE;   // 170
 
     // Steel wall - row 6, col 0 (from Steel.java)
@@ -134,40 +136,17 @@ namespace Base {
 }
 
 /**
- * @brief Bullet sprites - from Bullet.java
- * cut(0, 5 * 34, ...) -> (0, 170)
+ * @brief Bullet size. Bullets are drawn procedurally (a white rectangle
+ * elongated along the travel direction, see Bullet::onRender) - the sprite
+ * sheet has no usable directional bullet set.
  */
 namespace Bullet {
-    constexpr int BULLET_X = 0;
-    constexpr int BULLET_Y = 5 * ELEMENT_SIZE;  // 170
     constexpr int SIZE = 8;
-
-    inline Rectangle get(Direction dir) {
-        int index = 0;
-        switch (dir) {
-            case Direction::Up:    index = 0; break;
-            case Direction::Left:  index = 1; break;
-            case Direction::Down:  index = 2; break;
-            case Direction::Right: index = 3; break;
-        }
-        // Bullets are small, adjust offset within the element
-        return Rectangle(static_cast<float>(index * SIZE + 4),
-                        static_cast<float>(BULLET_Y + 4),
-                        SIZE, SIZE);
-    }
 }
 
-namespace PowerUp {
-    constexpr int POWERUP_X = 7 * ELEMENT_SIZE;  // 238
-    constexpr int POWERUP_Y = 6 * ELEMENT_SIZE;  // 204
-
-    inline Rectangle get(PowerUpType type) {
-        int index = static_cast<int>(type);
-        return Rectangle(static_cast<float>(POWERUP_X + index * ELEMENT_SIZE),
-                        static_cast<float>(POWERUP_Y),
-                        ELEMENT_SIZE, ELEMENT_SIZE);
-    }
-}
+// Note: power-up icons are rendered procedurally - see PowerUp.cpp.
+// The sprite sheet has no usable power-up icon set (row 6 cols 7-13 are
+// empty cells or unrelated UI icons).
 
 /**
  * @brief Explosion sprites - from BulletBoom.java and TankBoom.java
@@ -233,10 +212,8 @@ namespace UI {
     constexpr int LIFE_ICON_X = 10 * ELEMENT_SIZE;   // 340
     constexpr int LIFE_ICON_Y = 6 * ELEMENT_SIZE;    // 204
 
-    constexpr int FLAG_X = 11 * ELEMENT_SIZE;        // 374
-    constexpr int FLAG_Y = 6 * ELEMENT_SIZE;         // 204
-    constexpr int FLAG_W = ELEMENT_SIZE;
-    constexpr int FLAG_H = ELEMENT_SIZE;
+    // Note: the stage flag is drawn procedurally in GameHUD::renderLevelInfo -
+    // the cell originally referenced here (row 6, col 11) is empty.
 
     inline Rectangle getEnemyIcon() {
         return Rectangle(static_cast<float>(ENEMY_ICON_X),
@@ -248,12 +225,6 @@ namespace UI {
         return Rectangle(static_cast<float>(LIFE_ICON_X),
                         static_cast<float>(LIFE_ICON_Y),
                         ICON_SIZE, ICON_SIZE);
-    }
-
-    inline Rectangle getFlag() {
-        return Rectangle(static_cast<float>(FLAG_X),
-                        static_cast<float>(FLAG_Y),
-                        FLAG_W, FLAG_H);
     }
 }
 

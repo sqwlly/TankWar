@@ -29,6 +29,8 @@ constexpr int GRID_WIDTH = 26;
 constexpr int GRID_HEIGHT = 26;
 constexpr int CELL_SIZE = 17;
 constexpr int ELEMENT_SIZE = 34;  // 2 cells = 1 element (tank size)
+constexpr int TANK_COLLISION_MARGIN = 2;  // Pixels kept clear on each side of the sprite
+constexpr int TANK_COLLISION_SIZE = ELEMENT_SIZE - TANK_COLLISION_MARGIN * 2;
 
 // Timing
 constexpr float TARGET_FPS = 60.0f;
@@ -39,8 +41,18 @@ constexpr float FIXED_DELTA_TIME = 1.0f / TARGET_FPS;
 constexpr int ENEMY_SPAWN_INTERVAL = 3500;
 constexpr int POWERUP_SPAWN_INTERVAL = 13000;
 constexpr int PLAYER_RESPAWN_DELAY = 1200;
-constexpr int STOP_EFFECT_DURATION = 7000;
 constexpr int INVINCIBLE_DURATION = 3000;
+
+// Power-up tuning. Durations are expressed in seconds because gameplay state
+// updates use seconds, unlike the legacy timing values above.
+constexpr float POWERUP_FREEZE_DURATION = 8.0f;
+constexpr float POWERUP_INVINCIBILITY_DURATION = 8.0f;
+constexpr float POWERUP_BASE_FORTIFY_DURATION = 20.0f;
+constexpr int MAX_PLAYER_LIVES = 9;
+
+// Keep the drop table close to the gameplay constants so balancing does not
+// require changes to the state update code. The enum order is intentional.
+constexpr int POWERUP_DROP_WEIGHTS[] = {30, 15, 10, 15, 10, 10, 10};
 
 // Gameplay
 constexpr int MAX_ENEMIES_ON_SCREEN = 4;  // Per player
@@ -182,10 +194,12 @@ namespace Paths {
     constexpr const char* IMAGES = "assets/images/";
     constexpr const char* AUDIO = "assets/audio/";
     constexpr const char* LEVELS = "assets/levels/";
+    constexpr const char* PROGRESS = "assets/progress.properties";
 
     constexpr const char* SPRITE_SHEET = "assets/images/tank_sprite.png";
     constexpr const char* TEXTURE_ATLAS = "assets/images/texture_atlas.png";
     constexpr const char* TITLE_IMAGE = "assets/images/title.png";
+    constexpr const char* LOGO_IMAGE = "assets/images/logo.png";
 }
 
 } // namespace Constants
@@ -251,6 +265,19 @@ enum class PowerUpType {
 };
 
 /**
+ * @brief Player-selected gameplay difficulty.
+ * Stored as an integer in progress.properties for backward-compatible saves.
+ */
+enum class GameDifficulty {
+    Easy = 0,
+    Normal = 1,
+    Hard = 2
+};
+
+constexpr float DIFFICULTY_HEALTH_MULTIPLIERS[] = {0.80f, 1.0f, 1.25f};
+constexpr float DIFFICULTY_SPEED_MULTIPLIERS[] = {0.90f, 1.0f, 1.10f};
+
+/**
  * @brief Enemy types
  */
 enum class EnemyType {
@@ -286,7 +313,12 @@ enum class SoundId {
     Star,
     GameOver,
     StageStart,
-    Pause
+    Pause,
+    BrickBreak,
+    PlayerDamage,
+    TankHit,
+    MenuMove,
+    MenuConfirm
 };
 
 /**

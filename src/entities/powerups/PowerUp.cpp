@@ -61,12 +61,11 @@ void PowerUp::render(IRenderer& renderer) {
         return;
     }
 
+    // The sprite sheet has no usable power-up icons, so draw them procedurally.
     int x = static_cast<int>(position_.x);
     int y = static_cast<int>(position_.y);
     int w = static_cast<int>(width_);
     int h = static_cast<int>(height_);
-
-    Constants::Color color = getColorForType();
 
     // Draw power-up background
     renderer.drawRect(x, y, w, h, 64, 64, 64, 255);
@@ -128,19 +127,6 @@ void PowerUp::render(IRenderer& renderer) {
 void PowerUp::collect() {
     active_ = false;
     expired_ = true;
-}
-
-Constants::Color PowerUp::getColorForType() const {
-    switch (type_) {
-        case PowerUpType::Star:     return Constants::Color(255, 255, 0);
-        case PowerUpType::StopWatch: return Constants::Color(100, 100, 255);
-        case PowerUpType::Gun:      return Constants::Color(255, 100, 100);
-        case PowerUpType::IronCap:  return Constants::Color(200, 200, 200);
-        case PowerUpType::Bomb:     return Constants::Color(255, 50, 50);
-        case PowerUpType::Spade:    return Constants::Color(139, 69, 19);
-        case PowerUpType::Tank:     return Constants::Color(0, 200, 0);
-    }
-    return Constants::COLOR_WHITE;
 }
 
 } // namespace tank

@@ -79,4 +79,38 @@ private:
     Direction getDirectionToNext(const EnemyTank& enemy) const;
 };
 
+/**
+ * @brief Keeps a firing distance from the base instead of rushing it.
+ */
+class RangedAI : public IAIBehavior {
+public:
+    void update(EnemyTank& enemy, float deltaTime) override;
+    void setTarget(const Vector2& target) override { targetPos_ = target; }
+    Type getType() const override { return Type::Ranged; }
+
+private:
+    Vector2 targetPos_;
+    float fireTimer_ = 0.0f;
+
+    static constexpr float MIN_RANGE = 72.0f;
+    static constexpr float MAX_RANGE = 130.0f;
+    static constexpr float FIRE_INTERVAL = 0.55f;
+};
+
+/**
+ * @brief Moves directly towards the base, accepting collisions as pressure.
+ */
+class DirectAI : public IAIBehavior {
+public:
+    void update(EnemyTank& enemy, float deltaTime) override;
+    void setTarget(const Vector2& target) override { targetPos_ = target; }
+    Type getType() const override { return Type::Direct; }
+
+private:
+    Vector2 targetPos_;
+    float fireTimer_ = 0.0f;
+
+    static constexpr float FIRE_INTERVAL = 0.8f;
+};
+
 } // namespace tank

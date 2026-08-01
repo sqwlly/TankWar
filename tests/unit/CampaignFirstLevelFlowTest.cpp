@@ -91,8 +91,16 @@ TEST(CampaignFirstLevelFlowTest, VictoryFromLevel1TransitionsToStage2ThenPlaying
     playing->enemiesSpawned_ = spawnCount;
     playing->levelComplete_ = false;
 
-    playing->checkGameState();
-    manager.update(0.0f);  // Apply pending change -> StageState(2)
+    playing->checkGameState(0.0f);
+    manager.update(0.0f);  // Apply pending change -> ScoreState
+
+    ASSERT_NE(manager.getCurrentState(), nullptr);
+    ASSERT_EQ(manager.getCurrentState()->getType(), StateType::Score);
+
+    // Skip tally animation, then continue -> StageState(2).
+    pressKeyOnce(manager, input, SDL_SCANCODE_RETURN);
+    pressKeyOnce(manager, input, SDL_SCANCODE_RETURN);
+    manager.update(0.0f);
 
     ASSERT_NE(manager.getCurrentState(), nullptr);
     ASSERT_EQ(manager.getCurrentState()->getType(), StateType::Stage);

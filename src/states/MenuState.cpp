@@ -1,5 +1,6 @@
 #include "states/MenuState.hpp"
 #include "states/GameStateManager.hpp"
+#include "core/ServiceLocator.hpp"
 #include "graphics/SpriteSheet.hpp"
 #include "input/IInput.hpp"
 #include <iostream>
@@ -7,23 +8,34 @@
 
 namespace tank {
 
+namespace {
+
+void playMenuSfx(SoundId id) {
+    if (ServiceLocator::hasAudio()) {
+        ServiceLocator::getAudio().playSound(id);
+    }
+}
+
+} // namespace
+
 MenuState::MenuState(GameStateManager& manager)
     : stateManager_(manager)
 {
 }
 
 void MenuState::enter() {
-    std::cout << "Entering Menu State" << std::endl;
     selectedItem_ = MenuItem::Campaign;
     twoPlayerMode_ = false;
     animTimer_ = 0.0f;
     fadeAlpha_ = 0.0f;
-    titleBounce_ = 0.0f;
     cursorPulse_ = 0.0f;
+
+    if (ServiceLocator::hasAudio()) {
+        ServiceLocator::getAudio().playMusic("assets/audio/music/menu_theme.wav", true);
+    }
 }
 
 void MenuState::exit() {
-    std::cout << "Exiting Menu State" << std::endl;
 }
 
 void MenuState::update(float deltaTime) {
@@ -36,9 +48,6 @@ void MenuState::update(float deltaTime) {
         fadeAlpha_ += deltaTime * 2.0f;
         if (fadeAlpha_ > 1.0f) fadeAlpha_ = 1.0f;
     }
-
-    // Title bounce effect
-    titleBounce_ = std::sin(animTimer_ * 2.0f) * 3.0f;
 }
 
 void MenuState::render(IRenderer& renderer) {
@@ -47,36 +56,27 @@ void MenuState::render(IRenderer& renderer) {
     renderTitle(renderer);
     renderMenuItems(renderer);
     renderFooter(renderer);
+    if (settingsOpen_) {
+        renderSettings(renderer);
+    }
 }
 
 void MenuState::renderBackground(IRenderer& renderer) {
-    // Dark gradient background
     renderer.clear(
         Constants::UIColors::BG_DARK.r,
         Constants::UIColors::BG_DARK.g,
         Constants::UIColors::BG_DARK.b, 255);
-
-    // Subtle grid pattern for retro feel
-    const int gridSize = 32;
-    for (int y = 0; y < Constants::WINDOW_HEIGHT; y += gridSize) {
-        for (int x = 0; x < Constants::WINDOW_WIDTH; x += gridSize) {
-            uint8_t alpha = static_cast<uint8_t>(8 + 4 * std::sin(animTimer_ + x * 0.01f + y * 0.01f));
-            renderer.drawRect(x, y, gridSize, 1, 60, 60, 70, alpha);
-            renderer.drawRect(x, y, 1, gridSize, 60, 60, 70, alpha);
-        }
-    }
 }
 
 void MenuState::renderDecorations(IRenderer& renderer) {
-    // Animated tank decorations on sides using actual sprites
-    float tank1Y = 300 + std::sin(animTimer_ * 1.5f) * 10.0f;
-    float tank2Y = 320 + std::cos(animTimer_ * 1.5f) * 10.0f;
-
-    // Animation frame based on timer
+    // Animated tanks flanking the menu panel, facing each other
+    const int tankY = MENU_START_Y + MENU_ITEM_HEIGHT - 17;
+    float bob = std::sin(animTimer_ * 1.5f) * 6.0f;
     int animFrame = static_cast<int>(animTimer_ * 4.0f) % 2;
 
+    const int panelX = (Constants::WINDOW_WIDTH - MENU_PANEL_WIDTH) / 2;
+
     // Left tank (Player 1, facing right)
-    int leftX = 40;
     Rectangle p1Sprite = Sprites::Tank::getFrame(
         Sprites::Tank::P1_BASE_Y,
         Sprites::Tank::DIR_RIGHT_COL,
@@ -84,10 +84,9 @@ void MenuState::renderDecorations(IRenderer& renderer) {
     renderer.drawSprite(
         static_cast<int>(p1Sprite.x), static_cast<int>(p1Sprite.y),
         static_cast<int>(p1Sprite.width), static_cast<int>(p1Sprite.height),
-        leftX, static_cast<int>(tank1Y), 40, 40);
+        panelX - 70, tankY + static_cast<int>(bob), 40, 40);
 
     // Right tank (Player 2, facing left)
-    int rightX = Constants::WINDOW_WIDTH - 80;
     Rectangle p2Sprite = Sprites::Tank::getFrame(
         Sprites::Tank::P2_BASE_Y,
         Sprites::Tank::DIR_LEFT_COL,
@@ -95,155 +94,149 @@ void MenuState::renderDecorations(IRenderer& renderer) {
     renderer.drawSprite(
         static_cast<int>(p2Sprite.x), static_cast<int>(p2Sprite.y),
         static_cast<int>(p2Sprite.width), static_cast<int>(p2Sprite.height),
-        rightX, static_cast<int>(tank2Y), 40, 40);
-
-    // Battle smoke/explosion decorations
-    for (int i = 0; i < 3; ++i) {
-        float offset = animTimer_ * 30.0f + i * 40.0f;
-        int smokeX = 100 + static_cast<int>(offset) % 300;
-        int smokeY = 380 + i * 15;
-        uint8_t alpha = static_cast<uint8_t>(30 - i * 8);
-        renderer.drawRect(smokeX, smokeY, 8 + i * 2, 4, 100, 100, 100, alpha);
-    }
+        panelX + MENU_PANEL_WIDTH + 30, tankY - static_cast<int>(bob), 40, 40);
 }
 
 void MenuState::renderTitle(IRenderer& renderer) {
-    int titleX = Constants::WINDOW_WIDTH / 2 - 120;
-    int titleY = TITLE_Y + static_cast<int>(titleBounce_);
+    if (!logoTexture_) {
+        logoTexture_ = renderer.loadTexture(Constants::Paths::LOGO_IMAGE);
+    }
 
-    // Title glow effect
-    uint8_t glowAlpha = static_cast<uint8_t>(30 + 20 * std::sin(animTimer_ * 3.0f));
-    renderer.drawRect(titleX - 15, titleY - 10, 260, 60,
-                     Constants::UIColors::PRIMARY.r,
-                     Constants::UIColors::PRIMARY.g,
-                     Constants::UIColors::PRIMARY.b, glowAlpha);
-
-    // Main title with gradient simulation (two-tone)
-    renderer.drawText("TANK",
-                     Vector2(static_cast<float>(titleX), static_cast<float>(titleY)),
-                     Constants::UIColors::TITLE_TOP, 36);
-    renderer.drawText("BATTLE",
-                     Vector2(static_cast<float>(titleX + 10), static_cast<float>(titleY + 40)),
-                     Constants::UIColors::TITLE_BOTTOM, 32);
+    const int logoX = (Constants::WINDOW_WIDTH - LOGO_WIDTH) / 2;
+    if (logoTexture_) {
+        renderer.drawTexture(logoTexture_,
+                            Rectangle(static_cast<float>(logoX), static_cast<float>(LOGO_Y),
+                                      static_cast<float>(LOGO_WIDTH), static_cast<float>(LOGO_HEIGHT)));
+    }
 
     // Subtitle
-    uint8_t subAlpha = static_cast<uint8_t>(180 * fadeAlpha_);
-    renderer.drawText("C++ Edition",
-                     Vector2(static_cast<float>(titleX + 70), static_cast<float>(titleY + 80)),
-                     Constants::Color(150, 150, 150, subAlpha), 14);
+    const char* subtitle = "C++ EDITION";
+    Vector2 size = renderer.measureText(subtitle, 14);
+    uint8_t alpha = static_cast<uint8_t>(180 * fadeAlpha_);
+    renderer.drawText(subtitle,
+                     Vector2((Constants::WINDOW_WIDTH - size.x) / 2.0f,
+                             static_cast<float>(LOGO_Y + LOGO_HEIGHT + 10)),
+                     Constants::Color(150, 150, 150, alpha), 14);
+
+    // High score under the title
+    const std::string highScore = "HI-SCORE " + std::to_string(stateManager_.getHighScore());
+    Vector2 hsSize = renderer.measureText(highScore, 12);
+    renderer.drawText(highScore,
+                     Vector2((Constants::WINDOW_WIDTH - hsSize.x) / 2.0f,
+                             static_cast<float>(LOGO_Y + LOGO_HEIGHT + 30)),
+                     Constants::Color(255, 200, 0, alpha), 12);
 }
 
 void MenuState::renderMenuItems(IRenderer& renderer) {
-    const char* items[] = {
-        "CAMPAIGN",
-        "SURVIVAL"
-    };
+    const std::string campaignLabel = "CONTINUE STAGE " + std::to_string(stateManager_.getCampaignStartLevel());
+    const char* items[] = { campaignLabel.c_str(), "SURVIVAL", "SETTINGS" };
 
     const char* descriptions[] = {
         "Play through 20 stages",
-        "Endless wave mode"
+        "Endless wave mode",
+        "Volume, difficulty and controls"
     };
+
+    const int panelX = (Constants::WINDOW_WIDTH - MENU_PANEL_WIDTH) / 2;
 
     for (int i = 0; i < MENU_ITEM_COUNT; ++i) {
         int y = MENU_START_Y + i * MENU_ITEM_HEIGHT;
         bool selected = (static_cast<int>(selectedItem_) == i);
 
-        // Selection highlight background
         if (selected) {
-            uint8_t highlightAlpha = static_cast<uint8_t>(40 + 20 * std::sin(cursorPulse_));
-            renderer.drawRect(MENU_X - 40, y - 4, 220, 32,
+            // Panel highlight + left accent bar
+            renderer.drawRect(panelX, y - 6, MENU_PANEL_WIDTH, 36,
+                             Constants::UIColors::BG_PANEL.r,
+                             Constants::UIColors::BG_PANEL.g,
+                             Constants::UIColors::BG_PANEL.b, 255);
+            renderer.drawRect(panelX, y - 6, 4, 36,
                              Constants::UIColors::PRIMARY.r,
                              Constants::UIColors::PRIMARY.g,
-                             Constants::UIColors::PRIMARY.b, highlightAlpha);
-
-            // Left accent bar
-            renderer.drawRect(MENU_X - 45, y - 4, 3, 32,
-                             Constants::UIColors::PRIMARY.r,
-                             Constants::UIColors::PRIMARY.g,
-                             Constants::UIColors::PRIMARY.b, 200);
+                             Constants::UIColors::PRIMARY.b, 255);
+            renderCursor(renderer, panelX + 10, y + 1);
         }
 
-        // Menu item number
-        std::string numText = std::to_string(i + 1);
-        Constants::Color numColor = selected
-            ? Constants::UIColors::PRIMARY
-            : Constants::Color(100, 100, 100);
-        renderer.drawText(numText,
-                         Vector2(static_cast<float>(MENU_X - 25), static_cast<float>(y)),
-                         numColor, 18);
-
-        // Menu item text
         Constants::Color textColor = selected
             ? Constants::UIColors::MENU_HIGHLIGHT
             : Constants::UIColors::MENU_NORMAL;
         renderer.drawText(items[i],
-                         Vector2(static_cast<float>(MENU_X), static_cast<float>(y)),
+                         Vector2(static_cast<float>(panelX + 52), static_cast<float>(y)),
                          textColor, 20);
-
-        // Description text (only for selected item)
-        if (selected) {
-            renderer.drawText(descriptions[i],
-                             Vector2(static_cast<float>(MENU_X), static_cast<float>(y + 18)),
-                             Constants::Color(120, 120, 120), 11);
-        }
-
-        // Cursor for selected item
-        if (selected) {
-            renderCursor(renderer, MENU_X - 38, y + 6);
-        }
     }
 
-    // Player mode toggle
-    int modeY = MENU_START_Y + MENU_ITEM_COUNT * MENU_ITEM_HEIGHT + 20;
-    const char* modeText = twoPlayerMode_ ? "2 PLAYERS" : "1 PLAYER";
+    // Description of the selected item, centered below the panel
+    const char* description = descriptions[static_cast<int>(selectedItem_)];
+    Vector2 descSize = renderer.measureText(description, 11);
+    renderer.drawText(description,
+                     Vector2((Constants::WINDOW_WIDTH - descSize.x) / 2.0f,
+                             static_cast<float>(MENU_START_Y + MENU_ITEM_COUNT * MENU_ITEM_HEIGHT + 6)),
+                     Constants::Color(120, 120, 120), 11);
+
+    // Player mode toggle, centered as "MODE: " + value
+    int modeY = MENU_START_Y + MENU_ITEM_COUNT * MENU_ITEM_HEIGHT + 34;
+    const char* modeLabel = "MODE: ";
+    const char* modeValue = twoPlayerMode_ ? "2 PLAYERS" : "1 PLAYER";
     Constants::Color modeColor = twoPlayerMode_
         ? Constants::UIColors::PLAYER2
         : Constants::UIColors::PLAYER1;
 
-    renderer.drawText("MODE:",
-                     Vector2(static_cast<float>(MENU_X - 25), static_cast<float>(modeY)),
+    Vector2 labelSize = renderer.measureText(modeLabel, 14);
+    Vector2 valueSize = renderer.measureText(modeValue, 14);
+    float modeX = (Constants::WINDOW_WIDTH - labelSize.x - valueSize.x) / 2.0f;
+    renderer.drawText(modeLabel, Vector2(modeX, static_cast<float>(modeY)),
                      Constants::Color(100, 100, 100), 14);
-    renderer.drawText(modeText,
-                     Vector2(static_cast<float>(MENU_X + 50), static_cast<float>(modeY)),
+    renderer.drawText(modeValue, Vector2(modeX + labelSize.x, static_cast<float>(modeY)),
                      modeColor, 14);
 
     // Construction mode hint
-    renderer.drawText("C - CONSTRUCTION",
-                     Vector2(static_cast<float>(MENU_X - 25), static_cast<float>(modeY + 24)),
+    const char* hint = "C - CONSTRUCTION";
+    Vector2 hintSize = renderer.measureText(hint, 12);
+    renderer.drawText(hint,
+                     Vector2((Constants::WINDOW_WIDTH - hintSize.x) / 2.0f,
+                             static_cast<float>(modeY + 26)),
                      Constants::Color(80, 80, 80), 12);
 }
 
 void MenuState::renderCursor(IRenderer& renderer, int x, int y) {
-    // Animated arrow cursor
+    // Tank sprite cursor with a gentle horizontal bob
     float bounce = std::sin(cursorPulse_) * 3.0f;
     int cursorX = x + static_cast<int>(bounce);
+    int animFrame = static_cast<int>(animTimer_ * 4.0f) % 2;
 
-    // Draw arrow shape
-    renderer.drawRect(cursorX, y, 12, 4,
-                     Constants::UIColors::PRIMARY.r,
-                     Constants::UIColors::PRIMARY.g,
-                     Constants::UIColors::PRIMARY.b, 255);
-    renderer.drawRect(cursorX + 8, y - 3, 4, 10,
-                     Constants::UIColors::PRIMARY.r,
-                     Constants::UIColors::PRIMARY.g,
-                     Constants::UIColors::PRIMARY.b, 255);
+    Rectangle sprite = Sprites::Tank::getFrame(
+        Sprites::Tank::P1_BASE_Y,
+        Sprites::Tank::DIR_RIGHT_COL,
+        animFrame, 0);
+    renderer.drawSprite(
+        static_cast<int>(sprite.x), static_cast<int>(sprite.y),
+        static_cast<int>(sprite.width), static_cast<int>(sprite.height),
+        cursorX, y - 4, 32, 32);
 }
 
 void MenuState::renderFooter(IRenderer& renderer) {
-    int footerY = Constants::WINDOW_HEIGHT - 30;
+    int footerY = Constants::WINDOW_HEIGHT - 28;
 
-    // Controls hint
-    renderer.drawText("UP/DOWN: Select   ENTER: Confirm   P: Toggle Players",
-                     Vector2(80.0f, static_cast<float>(footerY)),
+    // Controls hint, centered
+    const char* controls = "UP/DOWN: SELECT   ENTER: CONFIRM   P: PLAYERS";
+    Vector2 size = renderer.measureText(controls, 11);
+    renderer.drawText(controls,
+                     Vector2((Constants::WINDOW_WIDTH - size.x) / 2.0f,
+                             static_cast<float>(footerY)),
                      Constants::Color(80, 80, 80), 11);
 
     // Version/credits
     renderer.drawText("v1.0",
-                     Vector2(static_cast<float>(Constants::WINDOW_WIDTH - 50), static_cast<float>(footerY)),
+                     Vector2(static_cast<float>(Constants::WINDOW_WIDTH - 40),
+                             static_cast<float>(footerY)),
                      Constants::Color(60, 60, 60), 10);
 }
 
 void MenuState::handleInput(const IInput& input) {
+    if (settingsOpen_) {
+        handleSettingsInput(input);
+        return;
+    }
+
     if (input.isKeyPressed(SDL_SCANCODE_C)) {
         stateManager_.changeToConstruction(1);
         return;
@@ -257,11 +250,18 @@ void MenuState::handleInput(const IInput& input) {
     // Direct mode selection via number keys
     if (input.isKeyPressed(SDL_SCANCODE_1)) {
         selectedItem_ = MenuItem::Campaign;
+        playMenuSfx(SoundId::MenuConfirm);
         confirmSelection();
         return;
     }
     if (input.isKeyPressed(SDL_SCANCODE_2)) {
         selectedItem_ = MenuItem::Survival;
+        playMenuSfx(SoundId::MenuConfirm);
+        confirmSelection();
+        return;
+    }
+    if (input.isKeyPressed(SDL_SCANCODE_3)) {
+        selectedItem_ = MenuItem::Settings;
         confirmSelection();
         return;
     }
@@ -269,12 +269,15 @@ void MenuState::handleInput(const IInput& input) {
     // Navigate
     if (input.isKeyPressed(SDL_SCANCODE_UP) || input.isKeyPressed(SDL_SCANCODE_W)) {
         selectPreviousItem();
+        playMenuSfx(SoundId::MenuMove);
     } else if (input.isKeyPressed(SDL_SCANCODE_DOWN) || input.isKeyPressed(SDL_SCANCODE_S)) {
         selectNextItem();
+        playMenuSfx(SoundId::MenuMove);
     }
 
     // Confirm
     if (input.isKeyPressed(SDL_SCANCODE_RETURN) || input.isKeyPressed(SDL_SCANCODE_SPACE)) {
+        playMenuSfx(SoundId::MenuConfirm);
         confirmSelection();
     }
 }
@@ -296,13 +299,89 @@ void MenuState::confirmSelection() {
 
     switch (selectedItem_) {
         case MenuItem::Campaign:
-            stateManager_.changeToStage(1, twoPlayerMode_);
+            stateManager_.beginRun();
+            stateManager_.changeToStage(stateManager_.getCampaignStartLevel(), twoPlayerMode_);
             break;
 
         case MenuItem::Survival:
+            stateManager_.beginRun();
             stateManager_.changeToPlaying(1, /*twoPlayer=*/twoPlayerMode_, /*useWaveGenerator=*/true);
             break;
+
+        case MenuItem::Settings:
+            settingsOpen_ = true;
+            selectedSettingsItem_ = SettingsItem::Volume;
+            break;
     }
+}
+
+void MenuState::handleSettingsInput(const IInput& input) {
+    if (input.isKeyPressed(SDL_SCANCODE_ESCAPE)) {
+        settingsOpen_ = false;
+        return;
+    }
+
+    int selected = static_cast<int>(selectedSettingsItem_);
+    if (input.isKeyPressed(SDL_SCANCODE_UP) || input.isKeyPressed(SDL_SCANCODE_W)) {
+        selected = (selected + 2) % 3;
+    } else if (input.isKeyPressed(SDL_SCANCODE_DOWN) || input.isKeyPressed(SDL_SCANCODE_S)) {
+        selected = (selected + 1) % 3;
+    }
+    selectedSettingsItem_ = static_cast<SettingsItem>(selected);
+
+    const bool decrease = input.isKeyPressed(SDL_SCANCODE_LEFT) || input.isKeyPressed(SDL_SCANCODE_A);
+    const bool increase = input.isKeyPressed(SDL_SCANCODE_RIGHT) || input.isKeyPressed(SDL_SCANCODE_D);
+    if (selectedSettingsItem_ == SettingsItem::Volume && (decrease || increase)) {
+        const float delta = decrease ? -0.1f : 0.1f;
+        stateManager_.setMasterVolume(stateManager_.getMasterVolume() + delta);
+    } else if (selectedSettingsItem_ == SettingsItem::Difficulty && (decrease || increase)) {
+        int value = static_cast<int>(stateManager_.getDifficulty());
+        value = (value + (decrease ? 2 : 1)) % 3;
+        stateManager_.setDifficulty(static_cast<GameDifficulty>(value));
+    }
+}
+
+void MenuState::renderSettings(IRenderer& renderer) {
+    const int panelWidth = 360;
+    const int panelHeight = 250;
+    const int panelX = (Constants::WINDOW_WIDTH - panelWidth) / 2;
+    const int panelY = 112;
+    renderer.drawRect(panelX, panelY, panelWidth, panelHeight,
+                     8, 10, 15, 240);
+    renderer.drawRect(panelX, panelY, panelWidth, 2,
+                     Constants::UIColors::PRIMARY.r, Constants::UIColors::PRIMARY.g,
+                     Constants::UIColors::PRIMARY.b, 255);
+
+    const char* title = "SETTINGS";
+    Vector2 titleSize = renderer.measureText(title, 22);
+    renderer.drawText(title, Vector2((Constants::WINDOW_WIDTH - titleSize.x) / 2.0f,
+                                     static_cast<float>(panelY + 20)),
+                     Constants::UIColors::MENU_HIGHLIGHT, 22);
+
+    const int volumePercent = static_cast<int>(stateManager_.getMasterVolume() * 100.0f + 0.5f);
+    const char* difficultyNames[] = {"EASY", "NORMAL", "HARD"};
+    const std::string values[] = {
+        "VOLUME: " + std::to_string(volumePercent) + "%",
+        std::string("DIFFICULTY: ") + difficultyNames[static_cast<int>(stateManager_.getDifficulty())],
+        "CONTROLS: P1 WASD + SPACE / P2 ARROWS + ENTER"
+    };
+
+    for (int i = 0; i < 3; ++i) {
+        const bool selected = static_cast<int>(selectedSettingsItem_) == i;
+        const int y = panelY + 68 + i * 36;
+        if (selected) {
+            renderer.drawText(">", Vector2(static_cast<float>(panelX + 22), static_cast<float>(y)),
+                             Constants::UIColors::MENU_HIGHLIGHT, 16);
+        }
+        renderer.drawText(values[i], Vector2(static_cast<float>(panelX + 44), static_cast<float>(y)),
+                         selected ? Constants::COLOR_WHITE : Constants::UIColors::MENU_NORMAL, 13);
+    }
+
+    const char* hint = "LEFT/RIGHT: CHANGE   ESC: BACK";
+    Vector2 hintSize = renderer.measureText(hint, 11);
+    renderer.drawText(hint, Vector2((Constants::WINDOW_WIDTH - hintSize.x) / 2.0f,
+                                    static_cast<float>(panelY + panelHeight - 28)),
+                     Constants::Color(120, 120, 120), 11);
 }
 
 } // namespace tank

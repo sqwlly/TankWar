@@ -37,6 +37,9 @@ public:
     virtual void drawText(const std::string& text, const Vector2& pos,
                           const Constants::Color& color, int fontSize = 16) = 0;
 
+    // Measure rendered text size in pixels (for layout/centering)
+    virtual Vector2 measureText(const std::string& text, int fontSize = 16) = 0;
+
     // Window access
     virtual int getWidth() const = 0;
     virtual int getHeight() const = 0;

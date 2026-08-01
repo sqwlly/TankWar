@@ -75,9 +75,11 @@ void PlayerTank::onRender(IRenderer& renderer) {
     // Get sprite frame using the Tank::getFrame helper
     Rectangle srcRect = Sprites::Tank::getFrame(baseY, dirCol, animationFrame_, level_);
 
-    int destX = static_cast<int>(position_.x);
-    int destY = static_cast<int>(position_.y);
-    int destSize = static_cast<int>(width_);
+    // Visual sprite (34x34) slightly larger than collision box (30x30)
+    // Center the collision box in the visual
+    int destX = static_cast<int>(position_.x) - (Sprites::ELEMENT_SIZE - static_cast<int>(width_)) / 2;
+    int destY = static_cast<int>(position_.y) - (Sprites::ELEMENT_SIZE - static_cast<int>(height_)) / 2;
+    int destSize = Sprites::ELEMENT_SIZE;  // 34
 
     renderer.drawSprite(
         static_cast<int>(srcRect.x), static_cast<int>(srcRect.y),

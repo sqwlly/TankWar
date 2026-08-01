@@ -134,9 +134,9 @@ void StageState::renderStageInfo(IRenderer& renderer) {
 
     // "STAGE" text
     std::string stageLabel = "STAGE";
-    int labelWidth = static_cast<int>(80 * scale);
+    Vector2 labelSize = renderer.measureText(stageLabel, textSize);
     renderer.drawText(stageLabel,
-                     Vector2(static_cast<float>(centerX - labelWidth / 2), static_cast<float>(centerY - 30)),
+                     Vector2(centerX - labelSize.x / 2.0f, static_cast<float>(centerY - 30)),
                      Constants::UIColors::STAGE_TEXT, textSize);
 
     // Stage number (larger)
@@ -145,9 +145,9 @@ void StageState::renderStageInfo(IRenderer& renderer) {
     if (numSize < 12) numSize = 12;
 
     // Number with accent color
-    int numWidth = static_cast<int>(stageNum.length() * 20 * scale);
+    Vector2 numSizeVec = renderer.measureText(stageNum, numSize);
     renderer.drawText(stageNum,
-                     Vector2(static_cast<float>(centerX - numWidth / 2), static_cast<float>(centerY + 5)),
+                     Vector2(centerX - numSizeVec.x / 2.0f, static_cast<float>(centerY + 5)),
                      Constants::UIColors::STAGE_ACCENT, numSize);
 
     // Decorative lines
@@ -172,8 +172,9 @@ void StageState::renderStageInfo(IRenderer& renderer) {
     if (scale > 0.9f) {
         const char* modeText = useWaveGenerator_ ? "SURVIVAL MODE" : "CAMPAIGN";
         uint8_t modeAlpha = static_cast<uint8_t>(150 * (scale - 0.9f) * 10.0f);
+        Vector2 modeSize = renderer.measureText(modeText, 12);
         renderer.drawText(modeText,
-                         Vector2(static_cast<float>(centerX - 60), static_cast<float>(centerY + 70)),
+                         Vector2(centerX - modeSize.x / 2.0f, static_cast<float>(centerY + 70)),
                          Constants::Color(150, 150, 150, modeAlpha), 12);
     }
 }
@@ -193,8 +194,9 @@ void StageState::renderPlayerIndicators(IRenderer& renderer) {
                          Constants::UIColors::PLAYER1.r,
                          Constants::UIColors::PLAYER1.g,
                          Constants::UIColors::PLAYER1.b, static_cast<uint8_t>(alpha / 4));
+        Vector2 p1Size = renderer.measureText("P1 READY", 14);
         renderer.drawText("P1 READY",
-                         Vector2(static_cast<float>(screenWidth / 4 - 35), static_cast<float>(y + 8)),
+                         Vector2(screenWidth / 4 - p1Size.x / 2.0f, y + (30.0f - p1Size.y) / 2.0f),
                          Constants::Color(Constants::UIColors::PLAYER1.r,
                                          Constants::UIColors::PLAYER1.g,
                                          Constants::UIColors::PLAYER1.b, alpha), 14);
@@ -204,8 +206,9 @@ void StageState::renderPlayerIndicators(IRenderer& renderer) {
                          Constants::UIColors::PLAYER2.r,
                          Constants::UIColors::PLAYER2.g,
                          Constants::UIColors::PLAYER2.b, static_cast<uint8_t>(alpha / 4));
+        Vector2 p2Size = renderer.measureText("P2 READY", 14);
         renderer.drawText("P2 READY",
-                         Vector2(static_cast<float>(3 * screenWidth / 4 - 35), static_cast<float>(y + 8)),
+                         Vector2(3 * screenWidth / 4 - p2Size.x / 2.0f, y + (30.0f - p2Size.y) / 2.0f),
                          Constants::Color(Constants::UIColors::PLAYER2.r,
                                          Constants::UIColors::PLAYER2.g,
                                          Constants::UIColors::PLAYER2.b, alpha), 14);
@@ -215,8 +218,9 @@ void StageState::renderPlayerIndicators(IRenderer& renderer) {
                          Constants::UIColors::PLAYER1.r,
                          Constants::UIColors::PLAYER1.g,
                          Constants::UIColors::PLAYER1.b, static_cast<uint8_t>(alpha / 4));
+        Vector2 p1Size = renderer.measureText("PLAYER 1", 14);
         renderer.drawText("PLAYER 1",
-                         Vector2(static_cast<float>(screenWidth / 2 - 40), static_cast<float>(y + 8)),
+                         Vector2(screenWidth / 2 - p1Size.x / 2.0f, y + (30.0f - p1Size.y) / 2.0f),
                          Constants::Color(Constants::UIColors::PLAYER1.r,
                                          Constants::UIColors::PLAYER1.g,
                                          Constants::UIColors::PLAYER1.b, alpha), 14);
@@ -225,8 +229,10 @@ void StageState::renderPlayerIndicators(IRenderer& renderer) {
     // Skip hint
     if (displayTime_ > 0.5f) {
         uint8_t hintAlpha = static_cast<uint8_t>(80 + 40 * std::sin(glowPulse_ * 2.0f));
-        renderer.drawText("PRESS ENTER TO START",
-                         Vector2(static_cast<float>(screenWidth / 2 - 80), static_cast<float>(screenHeight - 25)),
+        const char* hint = "PRESS ENTER TO START";
+        Vector2 hintSize = renderer.measureText(hint, 11);
+        renderer.drawText(hint,
+                         Vector2((screenWidth - hintSize.x) / 2.0f, static_cast<float>(screenHeight - 25)),
                          Constants::Color(100, 100, 100, hintAlpha), 11);
     }
 }

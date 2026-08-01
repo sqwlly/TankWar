@@ -1,15 +1,20 @@
 #include "states/ScoreState.hpp"
 #include "states/GameStateManager.hpp"
+#include "graphics/SpriteSheet.hpp"
+#include "level/LevelLoader.hpp"
 #include "rendering/IRenderer.hpp"
 #include "input/IInput.hpp"
 #include "utils/Constants.hpp"
 
 namespace tank {
 
-ScoreState::ScoreState(GameStateManager& manager, int levelNumber, bool victory)
+ScoreState::ScoreState(GameStateManager& manager, int levelNumber, bool victory,
+                       bool twoPlayer, bool useWaveGenerator)
     : stateManager_(manager)
     , levelNumber_(levelNumber)
     , victory_(victory)
+    , twoPlayerMode_(twoPlayer)
+    , useWaveGenerator_(useWaveGenerator)
     , killCounts_({0, 0, 0, 0})
     , displayedKills_({0, 0, 0, 0})
     , totalKills_(0)
@@ -34,6 +39,9 @@ void ScoreState::enter() {
     for (int i = 0; i < 4; ++i) {
         totalKills_ += killCounts_[i];
     }
+
+    stateManager_.recordHighScore(totalScore_);
+    highScore_ = stateManager_.getHighScore();
 }
 
 void ScoreState::exit() {
@@ -80,87 +88,96 @@ void ScoreState::render(IRenderer& renderer) {
     renderer.clear(0, 0, 0, 255);
 
     int screenWidth = renderer.getWidth();
-    int baseX = 60;
-    int baseY = 40;
 
-    // Draw "STAGE X" header
+    // Header, centered
     std::string stageText = "STAGE " + std::to_string(levelNumber_);
-    renderer.drawText(stageText, Vector2(static_cast<float>(screenWidth / 2 - 60), static_cast<float>(baseY)),
+    Vector2 stageSize = renderer.measureText(stageText, 20);
+    renderer.drawText(stageText,
+                     Vector2((screenWidth - stageSize.x) / 2.0f, 36.0f),
                      Constants::COLOR_WHITE, 20);
 
-    // Draw "I-PLAYER" label
-    renderer.drawText("I-PLAYER", Vector2(static_cast<float>(baseX), static_cast<float>(baseY + 50)),
-                     Constants::Color(255, 0, 0), 20);
+    const char* playerLabel = "I-PLAYER";
+    Vector2 labelSize = renderer.measureText(playerLabel, 16);
+    renderer.drawText(playerLabel,
+                     Vector2((screenWidth - labelSize.x) / 2.0f, 68.0f),
+                     Constants::Color(255, 0, 0), 16);
 
-    // Draw total score
     std::string scoreText = std::to_string(totalScore_);
-    renderer.drawText(scoreText, Vector2(static_cast<float>(baseX + 50), static_cast<float>(baseY + 80)),
-                     Constants::Color(255, 200, 0), 20);
+    Vector2 scoreSize = renderer.measureText(scoreText, 18);
+    renderer.drawText(scoreText,
+                     Vector2((screenWidth - scoreSize.x) / 2.0f, 92.0f),
+                     Constants::Color(255, 200, 0), 18);
 
-    // Draw each enemy type row
+    const std::string highScoreText = "HI-SCORE " + std::to_string(highScore_);
+    Vector2 highScoreSize = renderer.measureText(highScoreText, 12);
+    renderer.drawText(highScoreText,
+                     Vector2((screenWidth - highScoreSize.x) / 2.0f, 116.0f),
+                     Constants::Color(180, 180, 180), 12);
+
+    // Enemy type rows (real tank sprites, centered as a group)
     for (int i = 0; i < 4; ++i) {
-        int rowY = baseY + 110 + i * 45;
+        int rowY = 140 + i * 44;
         renderRow(renderer, i, rowY);
     }
 
-    // Draw separator line
-    int lineY = baseY + 290;
-    renderer.drawRect(baseX, lineY, screenWidth - baseX * 2, 3, 255, 255, 255, 255);
+    // Separator line
+    int lineY = 140 + 4 * 44 + 4;
+    renderer.drawRect((screenWidth - 280) / 2, lineY, 280, 3, 255, 255, 255, 255);
 
-    // Draw total
+    // Total
     std::string totalText = "TOTAL  " + std::to_string(displayedTotal_);
-    renderer.drawText(totalText, Vector2(static_cast<float>(baseX + 100), static_cast<float>(lineY + 20)),
+    Vector2 totalSize = renderer.measureText(totalText, 18);
+    renderer.drawText(totalText,
+                     Vector2((screenWidth - totalSize.x) / 2.0f, static_cast<float>(lineY + 18)),
                      Constants::COLOR_WHITE, 18);
 
-    // Draw continue prompt
+    // Continue prompt
     if (animationComplete_) {
-        renderer.drawText("Press ENTER to continue",
-                         Vector2(static_cast<float>(baseX + 50), static_cast<float>(lineY + 60)),
+        const char* prompt = "PRESS ENTER TO CONTINUE";
+        Vector2 promptSize = renderer.measureText(prompt, 12);
+        renderer.drawText(prompt,
+                         Vector2((screenWidth - promptSize.x) / 2.0f, static_cast<float>(lineY + 52)),
                          Constants::COLOR_GRAY, 12);
     }
 }
 
 void ScoreState::renderRow(IRenderer& renderer, int row, int y) {
-    int baseX = 60;
+    int screenWidth = renderer.getWidth();
 
-    // Points earned
     int points = displayedKills_[row] * POINTS_PER_TYPE[row];
-    std::string pointsText = std::to_string(points);
-    renderer.drawText(pointsText, Vector2(static_cast<float>(baseX + 50), static_cast<float>(y)),
-                     Constants::COLOR_WHITE, 16);
+    std::string text = std::to_string(displayedKills_[row]) + " x " +
+                       std::to_string(points) + " PTS";
+    Vector2 textSize = renderer.measureText(text, 16);
 
-    // "PTS" label
-    renderer.drawText("PTS", Vector2(static_cast<float>(baseX + 130), static_cast<float>(y)),
-                     Constants::COLOR_WHITE, 16);
+    // Group: [tank sprite] + gap + text, centered on screen
+    const int spriteSize = Sprites::ELEMENT_SIZE;  // 34
+    const int gap = 12;
+    float groupWidth = spriteSize + gap + textSize.x;
+    int groupX = static_cast<int>((screenWidth - groupWidth) / 2.0f);
 
-    // Kill count
-    std::string killText = std::to_string(displayedKills_[row]);
-    renderer.drawText(killText, Vector2(static_cast<float>(baseX + 200), static_cast<float>(y)),
-                     Constants::COLOR_WHITE, 16);
+    // Same sprite the type uses in-game: row 2, 8 columns per type
+    int srcX = (row * 8 + Sprites::Tank::DIR_RIGHT_COL) * Sprites::ELEMENT_SIZE;
+    int srcY = Sprites::Tank::ENEMY_BASIC_Y;
+    renderer.drawSprite(srcX, srcY, Sprites::ELEMENT_SIZE, Sprites::ELEMENT_SIZE,
+                       groupX, y, spriteSize, spriteSize);
 
-    // Arrow symbol
-    renderer.drawText("<", Vector2(static_cast<float>(baseX + 230), static_cast<float>(y)),
+    // Text vertically centered on the sprite
+    float textY = y + (spriteSize - textSize.y) / 2.0f;
+    renderer.drawText(text,
+                     Vector2(static_cast<float>(groupX + spriteSize + gap), textY),
                      Constants::COLOR_WHITE, 16);
-
-    // Tank type indicator (colored rectangle as placeholder)
-    int tankX = baseX + 260;
-    Constants::Color tankColor(150, 150, 150);  // Default gray
-    switch (row) {
-        case 0: tankColor = Constants::Color(150, 150, 150); break;  // Basic - gray
-        case 1: tankColor = Constants::Color(100, 200, 100); break;  // Fast - green
-        case 2: tankColor = Constants::Color(200, 100, 100); break;  // Power - red
-        case 3: tankColor = Constants::Color(200, 200, 100); break;  // Heavy - yellow
-    }
-    renderer.drawRect(tankX, y - 10, 24, 24,
-                     tankColor.r, tankColor.g, tankColor.b, 255);
 }
 
 void ScoreState::handleInput(const IInput& input) {
     if (animationComplete_) {
         if (input.isKeyPressed(SDL_SCANCODE_RETURN) || input.isKeyPressed(SDL_SCANCODE_SPACE)) {
             if (victory_) {
-                // Go to next level
-                stateManager_.changeToStage(levelNumber_ + 1);
+                // Go to next level (campaign loops back to stage 1 after the last)
+                int nextLevel = levelNumber_ + 1;
+                if (nextLevel > LevelLoader::getTotalLevels()) {
+                    nextLevel = 1;
+                }
+                stateManager_.changeToStage(nextLevel, twoPlayerMode_, useWaveGenerator_);
             } else {
                 // Game over - return to menu
                 stateManager_.changeToMenu();

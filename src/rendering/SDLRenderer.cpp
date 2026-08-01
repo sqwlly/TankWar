@@ -60,6 +60,10 @@ bool SDLRenderer::initialize(const std::string& title, int width, int height) {
     // Set default font path
     defaultFontPath_ = "assets/joystix.ttf";
 
+    // IMPORTANT: Disable text input to prevent IME from intercepting keyboard events
+    // This is required for game keyboard input to work correctly
+    SDL_StopTextInput();
+
     std::cout << "SDL Renderer initialized successfully" << std::endl;
     return true;
 }
@@ -67,11 +71,14 @@ bool SDLRenderer::initialize(const std::string& title, int width, int height) {
 void SDLRenderer::shutdown() {
     clearFontCache();
 
-    // Destroy sprite sheet texture
-    if (spriteSheet_) {
-        SDL_DestroyTexture(spriteSheet_);
-        spriteSheet_ = nullptr;
+    // Destroy all cached textures (sprite sheet included - it is cache-owned)
+    for (auto& [path, texture] : textureCache_) {
+        if (texture) {
+            SDL_DestroyTexture(texture);
+        }
     }
+    textureCache_.clear();
+    spriteSheet_ = nullptr;
 
     if (renderer_) {
         SDL_DestroyRenderer(renderer_);
@@ -119,6 +126,11 @@ void SDLRenderer::drawRectangle(const Rectangle& rect, const Constants::Color& c
 }
 
 SDL_Texture* SDLRenderer::loadTexture(const std::string& path) {
+    auto it = textureCache_.find(path);
+    if (it != textureCache_.end()) {
+        return it->second;
+    }
+
     SDL_Surface* surface = IMG_Load(path.c_str());
     if (!surface) {
         std::cerr << "Failed to load image: " << path << " - " << IMG_GetError() << std::endl;
@@ -133,6 +145,7 @@ SDL_Texture* SDLRenderer::loadTexture(const std::string& path) {
         return nullptr;
     }
 
+    textureCache_[path] = texture;
     return texture;
 }
 
@@ -193,6 +206,17 @@ void SDLRenderer::drawText(const std::string& text, const Vector2& pos,
     SDL_FreeSurface(surface);
 }
 
+Vector2 SDLRenderer::measureText(const std::string& text, int fontSize) {
+    TTF_Font* font = getFont(fontSize);
+    if (!font) return Vector2(0.0f, 0.0f);
+
+    int w = 0, h = 0;
+    if (TTF_SizeText(font, text.c_str(), &w, &h) != 0) {
+        return Vector2(0.0f, 0.0f);
+    }
+    return Vector2(static_cast<float>(w), static_cast<float>(h));
+}
+
 TTF_Font* SDLRenderer::getFont(int size) {
     auto it = fontCache_.find(size);
     if (it != fontCache_.end()) {
@@ -236,9 +260,7 @@ void SDLRenderer::drawSprite(int srcX, int srcY, int srcW, int srcH,
 }
 
 void SDLRenderer::setSpriteSheet(const std::string& path) {
-    if (spriteSheet_) {
-        SDL_DestroyTexture(spriteSheet_);
-    }
+    // Texture is owned by the cache; just re-point the active sheet
     spriteSheet_ = loadTexture(path);
 }
 

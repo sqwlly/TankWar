@@ -13,7 +13,8 @@ enum class EffectType {
     SpawnEffect,        // Tank spawn animation
     BulletExplosion,    // Small explosion when bullet hits
     TankExplosion,      // Large explosion when tank dies
-    Invincibility       // Shield effect around tank
+    Invincibility,      // Shield effect around tank
+    ScorePopup           // Brief points feedback above a defeated tank
 };
 
 /**
@@ -113,6 +114,26 @@ private:
     bool expired_;
     int currentFrame_;
     float frameTimer_;
+};
+
+/**
+ * @brief Lightweight HUD feedback for an enemy reward or multi-kill reward.
+ */
+class ScorePopup : public Effect {
+public:
+    ScorePopup(int x, int y, int points, int multiplier = 1);
+
+    void update(float deltaTime) override;
+    void render(IRenderer& renderer) override;
+
+protected:
+    void initAnimation() override {}
+
+private:
+    int points_;
+    int multiplier_;
+    float elapsed_ = 0.0f;
+    static constexpr float LIFETIME = 0.8f;
 };
 
 } // namespace tank

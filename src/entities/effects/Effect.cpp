@@ -1,6 +1,7 @@
 #include "entities/effects/Effect.hpp"
 #include "rendering/IRenderer.hpp"
 #include "graphics/SpriteSheet.hpp"
+#include <string>
 
 namespace tank {
 
@@ -200,6 +201,34 @@ void InvincibilityEffect::render(IRenderer& renderer) {
 void InvincibilityEffect::setPosition(int x, int y) {
     position_.x = static_cast<float>(x);
     position_.y = static_cast<float>(y);
+}
+
+ScorePopup::ScorePopup(int x, int y, int points, int multiplier)
+    : Effect(x, y, EffectType::ScorePopup)
+    , points_(points)
+    , multiplier_(multiplier)
+{
+}
+
+void ScorePopup::update(float deltaTime) {
+    elapsed_ += deltaTime;
+    position_.y -= 24.0f * deltaTime;
+    if (elapsed_ >= LIFETIME) {
+        complete_ = true;
+        active_ = false;
+    }
+}
+
+void ScorePopup::render(IRenderer& renderer) {
+    if (complete_) {
+        return;
+    }
+
+    std::string label = "+" + std::to_string(points_);
+    if (multiplier_ > 1) {
+        label += " x" + std::to_string(multiplier_);
+    }
+    renderer.drawText(label, position_, Constants::Color(255, 220, 60), 12);
 }
 
 } // namespace tank

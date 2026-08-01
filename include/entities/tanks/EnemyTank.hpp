@@ -21,6 +21,7 @@ public:
 
     // Reward for destroying this enemy
     int getReward() const;
+    void applyDifficulty(GameDifficulty difficulty);
 
     // AI behavior
     void setAIBehavior(std::unique_ptr<IAIBehavior> behavior);

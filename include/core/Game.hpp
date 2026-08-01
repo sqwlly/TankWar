@@ -3,6 +3,7 @@
 #include "states/GameStateManager.hpp"
 #include "rendering/SDLRenderer.hpp"
 #include "input/InputManager.hpp"
+#include "audio/SDLAudioPlayer.hpp"
 #include "utils/Constants.hpp"
 #include <memory>
 #include <string>
@@ -42,6 +43,7 @@ private:
     // Core systems
     std::shared_ptr<SDLRenderer> renderer_;
     std::shared_ptr<InputManager> inputManager_;
+    std::shared_ptr<SDLAudioPlayer> audioPlayer_;
     GameStateManager stateManager_;
 
     // Timing

@@ -9,10 +9,6 @@ namespace tank::test {
 TEST(InputManagerKeycodeTest, KeycodeQueriesUseKeycodeState) {
     InputManager input;
 
-    input.currentKeys_.fill(false);
-    input.previousKeys_.fill(false);
-    input.eventKeys_.fill(false);
-
     input.currentKeycodes_.clear();
     input.previousKeycodes_.clear();
     input.eventKeycodes_.clear();

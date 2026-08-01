@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 namespace tank {
 
@@ -74,6 +75,24 @@ private:
     std::vector<std::unique_ptr<Effect>> effects_;
     PowerUpManager powerUpManager_;
 
+    // Timed global power-up state.
+    float freezeTimer_ = 0.0f;
+    float baseFortifyTimer_ = 0.0f;
+    struct FortifiedCell {
+        int x;
+        int y;
+    };
+    std::vector<FortifiedCell> fortifiedCells_;
+
+    // Enemy deaths are resolved in removeDeadEntities(), after collision and
+    // power-up handling have completed for the frame.
+    struct EnemyDefeat {
+        PlayerTank* owner = nullptr;
+        const void* damageSource = nullptr;
+        bool preventsMultiplier = false;
+    };
+    std::unordered_map<EnemyTank*, EnemyDefeat> enemyDefeats_;
+
     // Collision
     CollisionManager collisionManager_;
 
@@ -92,11 +111,17 @@ private:
     // Player lives
     int player1Lives_;
     int player2Lives_;
+    float player1RespawnTimer_ = 0.0f;
+    float player2RespawnTimer_ = 0.0f;
+    static constexpr float RESPAWN_CHECK_INTERVAL = 0.5f;  // Check every 0.5 seconds
 
     // UI components
     GameHUD hud_;
     GameOverOverlay gameOverOverlay_;
     PauseOverlay pauseOverlay_;
+
+    // Debug mode
+    bool debugMode_ = false;
 
     // Methods
     void loadLevel();
@@ -105,11 +130,12 @@ private:
     void setupCollisionHandlers();
 
     void updateEntities(float deltaTime);
+    void updateTimedPowerUps(float deltaTime);
     void updateEffects(float deltaTime);
     void checkCollisions();
     void checkTankTerrainCollisions();
     void removeDeadEntities();
-    void checkGameState();
+    void checkGameState(float deltaTime);
 
     void handlePlayer1Input(const IInput& input);
     void handlePlayer2Input(const IInput& input);
@@ -123,12 +149,25 @@ private:
     void renderTerrain(IRenderer& renderer);
     void renderEntities(IRenderer& renderer);
     void renderUI(IRenderer& renderer);
+    void renderDebugBounds(IRenderer& renderer);
 
     void handleTankShooting(Tank& tank);
     Vector2 calculateBulletSpawnPosition(const Tank& tank) const;
     void detachBulletsFromTank(ITank* tank);
     void detachAllBulletOwners();
     bool isTankSpawnAreaFree(const Vector2& position) const;
+
+    void applyPowerUp(PlayerTank& player, PowerUpType type);
+    void fortifyBase();
+    void restoreFortifiedBase();
+    // Copies live destructible-terrain state (brick corners / steel) back into
+    // the level map. Bullets only damage terrain entities, so the map is stale
+    // until synced; call before any full createTerrain() rebuild.
+    void syncDestructibleTerrainToMap();
+    PowerUpType chooseRandomPowerUp();
+    void registerEnemyDefeat(EnemyTank& enemy, PlayerTank* owner,
+                             const void* damageSource = nullptr, bool fromBomb = false);
+    void configureEnemyAI(EnemyTank& enemy);
 };
 
 } // namespace tank

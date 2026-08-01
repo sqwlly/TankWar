@@ -1,5 +1,7 @@
 #include "entities/tanks/EnemyTank.hpp"
 #include "graphics/SpriteSheet.hpp"
+#include <algorithm>
+#include <cmath>
 #include <random>
 
 namespace tank {
@@ -48,6 +50,16 @@ int EnemyTank::getReward() const {
     return Constants::ENEMY_REWARD[index];
 }
 
+void EnemyTank::applyDifficulty(GameDifficulty difficulty) {
+    const int index = std::clamp(static_cast<int>(difficulty), 0, 2);
+    const float healthMultiplier = DIFFICULTY_HEALTH_MULTIPLIERS[index];
+    const float speedMultiplier = DIFFICULTY_SPEED_MULTIPLIERS[index];
+    health_ = std::max(1, static_cast<int>(std::lround(health_ * healthMultiplier)));
+    maxHealth_ = std::max(health_, static_cast<int>(std::lround(maxHealth_ * healthMultiplier)));
+    defense_ = static_cast<int>(std::lround(defense_ * healthMultiplier));
+    speed_ *= speedMultiplier;
+}
+
 void EnemyTank::setAIBehavior(std::unique_ptr<IAIBehavior> behavior) {
     aiBehavior_ = std::move(behavior);
 }
@@ -90,9 +102,11 @@ void EnemyTank::onRender(IRenderer& renderer) {
     int srcX = (typeOffset * 8 + dirCol + animationFrame_) * Sprites::ELEMENT_SIZE + xOffset;
     int srcY = baseY;
 
-    int destX = static_cast<int>(position_.x);
-    int destY = static_cast<int>(position_.y);
-    int destSize = static_cast<int>(width_);
+    // Visual sprite (34x34) slightly larger than collision box (30x30)
+    // Center the collision box in the visual
+    int destX = static_cast<int>(position_.x) - (Sprites::ELEMENT_SIZE - static_cast<int>(width_)) / 2;
+    int destY = static_cast<int>(position_.y) - (Sprites::ELEMENT_SIZE - static_cast<int>(height_)) / 2;
+    int destSize = Sprites::ELEMENT_SIZE;  // 34
 
     renderer.drawSprite(srcX, srcY, Sprites::ELEMENT_SIZE, Sprites::ELEMENT_SIZE,
                        destX, destY, destSize, destSize);

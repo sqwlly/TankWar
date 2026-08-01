@@ -12,7 +12,8 @@ class GameStateManager;
  */
 class ScoreState : public IGameState {
 public:
-    ScoreState(GameStateManager& manager, int levelNumber, bool victory);
+    ScoreState(GameStateManager& manager, int levelNumber, bool victory,
+               bool twoPlayer = false, bool useWaveGenerator = false);
     ~ScoreState() override = default;
 
     void enter() override;
@@ -31,6 +32,8 @@ private:
     GameStateManager& stateManager_;
     int levelNumber_;
     bool victory_;
+    bool twoPlayerMode_ = false;
+    bool useWaveGenerator_ = false;
 
     // Kill counts by enemy type (0-3)
     std::array<int, 4> killCounts_;

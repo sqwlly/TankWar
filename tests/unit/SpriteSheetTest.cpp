@@ -62,37 +62,16 @@ TEST_F(SpriteSheetTest, PlayerTankDirectionOrder) {
 }
 
 // Bullet sprite tests
-TEST_F(SpriteSheetTest, BulletDirectionLayout) {
-    // Bullets at y=170 (5 * ELEMENT_SIZE)
-    // In current implementation, bullets are a single row of 4 sprites, each 8x8,
-    // with a constant +4 offset inside the element.
-
-    Rectangle up = Sprites::Bullet::get(Direction::Up);
-    Rectangle down = Sprites::Bullet::get(Direction::Down);
-    Rectangle left = Sprites::Bullet::get(Direction::Left);
-    Rectangle right = Sprites::Bullet::get(Direction::Right);
-
-    EXPECT_EQ(up.x, 4.0f);
-    EXPECT_EQ(up.y, 5.0f * ELEMENT_SIZE + 4.0f);
-
-    EXPECT_EQ(left.x, 12.0f);
-    EXPECT_EQ(left.y, up.y);
-
-    EXPECT_EQ(down.x, 20.0f);
-    EXPECT_EQ(down.y, up.y);
-
-    EXPECT_EQ(right.x, 28.0f);
-    EXPECT_EQ(right.y, up.y);
-
-    EXPECT_EQ(up.width, 8);
-    EXPECT_EQ(up.height, 8);
+TEST_F(SpriteSheetTest, BulletSizeMatchesEntity) {
+    // Bullets are drawn procedurally; only the shared size constant remains.
+    EXPECT_EQ(Sprites::Bullet::SIZE, 8);
 }
 
 // Terrain sprite tests
 TEST_F(SpriteSheetTest, BrickWallSprite) {
     Rectangle brick = Sprites::Terrain::getBrick(0);
 
-    EXPECT_EQ(brick.x, 4.0f * ELEMENT_SIZE);   // 136
+    EXPECT_EQ(brick.x, 18.0f * ELEMENT_SIZE);  // 612
     EXPECT_EQ(brick.y, 5.0f * ELEMENT_SIZE);   // 170
     EXPECT_EQ(brick.width, ELEMENT_SIZE);
     EXPECT_EQ(brick.height, ELEMENT_SIZE);

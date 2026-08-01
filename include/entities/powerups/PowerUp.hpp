@@ -40,7 +40,6 @@ private:
     static constexpr float BLINK_START = 7.0f;      // Start blinking at 7s
 
     void initAnimation();
-    Constants::Color getColorForType() const;
 };
 
 } // namespace tank

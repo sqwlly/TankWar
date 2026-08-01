@@ -37,6 +37,8 @@ public:
     void drawText(const std::string& text, const Vector2& pos,
                   const Constants::Color& color, int fontSize = 16) override;
 
+    Vector2 measureText(const std::string& text, int fontSize = 16) override;
+
     int getWidth() const override { return width_; }
     int getHeight() const override { return height_; }
 
@@ -65,6 +67,9 @@ private:
     // Font cache
     std::unordered_map<int, TTF_Font*> fontCache_;
     std::string defaultFontPath_;
+
+    // Texture cache - owns all textures loaded via loadTexture (keyed by path)
+    std::unordered_map<std::string, SDL_Texture*> textureCache_;
 
     TTF_Font* getFont(int size);
     void clearFontCache();

@@ -51,12 +51,13 @@ void Tank::render(IRenderer& renderer) {
         int spawnFrame = static_cast<int>((Constants::SPAWN_ANIMATION_FRAMES -
             spawnTimer_ / (Constants::SPAWN_ANIMATION_DELAY / 1000.0f))) % 4;
         Rectangle srcRect = Sprites::Spawn::get(spawnFrame);
-        int x = static_cast<int>(position_.x);
-        int y = static_cast<int>(position_.y);
+        // Match the tank sprite: 34x34 visual centered on the 24x24 collision box
+        int x = static_cast<int>(position_.x) - (Sprites::ELEMENT_SIZE - static_cast<int>(width_)) / 2;
+        int y = static_cast<int>(position_.y) - (Sprites::ELEMENT_SIZE - static_cast<int>(height_)) / 2;
         renderer.drawSprite(
             static_cast<int>(srcRect.x), static_cast<int>(srcRect.y),
             static_cast<int>(srcRect.width), static_cast<int>(srcRect.height),
-            x, y, static_cast<int>(width_), static_cast<int>(height_)
+            x, y, Sprites::ELEMENT_SIZE, Sprites::ELEMENT_SIZE
         );
         return;
     }
@@ -66,7 +67,6 @@ void Tank::render(IRenderer& renderer) {
 }
 
 void Tank::move(Direction direction) {
-    previousPosition_ = position_;
     direction_ = direction;
 
     Vector2 delta = directionToVector(direction) * speed_;
@@ -79,8 +79,25 @@ void Tank::move(Direction direction) {
     newX = std::clamp(newX, 0.0f, static_cast<float>(Constants::GAME_WIDTH - width_));
     newY = std::clamp(newY, 0.0f, static_cast<float>(Constants::GAME_HEIGHT - height_));
 
-    position_.x = newX;
-    position_.y = newY;
+    // Only update previousPosition if we actually moved
+    if (newX != position_.x || newY != position_.y) {
+        previousPosition_ = position_;
+        position_.x = newX;
+        position_.y = newY;
+    }
+}
+
+// Internal movement methods that don't update previousPosition (for collision)
+void Tank::moveXInternal(float deltaX) {
+    if (deltaX == 0.0f) return;
+    float newX = position_.x + deltaX;
+    position_.x = std::clamp(newX, 0.0f, static_cast<float>(Constants::GAME_WIDTH - width_));
+}
+
+void Tank::moveYInternal(float deltaY) {
+    if (deltaY == 0.0f) return;
+    float newY = position_.y + deltaY;
+    position_.y = std::clamp(newY, 0.0f, static_cast<float>(Constants::GAME_HEIGHT - height_));
 }
 
 void Tank::stay() {
@@ -140,6 +157,23 @@ void Tank::upgrade() {
             defense_ = 20;
             health_ = maxHealth_;
         }
+    }
+}
+
+void Tank::setLevel(int level) {
+    // Clamp to valid range
+    if (level < 0) level = 0;
+    if (level > 3) level = 3;
+
+    // Reset to base stats first
+    level_ = 0;
+    maxBullets_ = 1;
+    defense_ = 0;
+    health_ = Constants::PLAYER_DEFAULT_HP;
+
+    // Apply upgrade effects to reach target level
+    while (level_ < level) {
+        upgrade();
     }
 }
 

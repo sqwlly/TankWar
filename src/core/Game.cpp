@@ -23,7 +23,9 @@ bool Game::initialize() {
         return false;
     }
 
+    initializeAudio();
     initializeServices();
+    stateManager_.loadProgress();
     loadInitialState();
 
     running_ = true;
@@ -64,13 +66,20 @@ bool Game::initializeInput() {
 }
 
 bool Game::initializeAudio() {
-    // Audio initialization will be added in Phase 8
+    audioPlayer_ = std::make_shared<SDLAudioPlayer>();
+    if (!audioPlayer_->initialize()) {
+        std::cerr << "Audio is unavailable; continuing without sound" << std::endl;
+        audioPlayer_.reset();
+    }
     return true;
 }
 
 void Game::initializeServices() {
     ServiceLocator::provide(renderer_);
     ServiceLocator::provide(inputManager_);
+    if (audioPlayer_) {
+        ServiceLocator::provide(audioPlayer_);
+    }
 }
 
 void Game::loadInitialState() {
@@ -97,6 +106,11 @@ void Game::shutdown() {
     }
 
     inputManager_.reset();
+
+    if (audioPlayer_) {
+        audioPlayer_->shutdown();
+        audioPlayer_.reset();
+    }
 
     std::cout << "Game shutdown complete" << std::endl;
 }

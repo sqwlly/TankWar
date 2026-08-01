@@ -17,6 +17,9 @@ public:
     // Player identity
     int getPlayerId() const { return playerId_; }
 
+    // Spawn position
+    Vector2 getSpawnPosition() const { return spawnPosition_; }
+
     // Score
     int getScore() const { return score_; }
     void addScore(int points) { score_ += points; }

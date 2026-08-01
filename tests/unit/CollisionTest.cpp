@@ -45,18 +45,18 @@ TEST_F(CollisionManagerTest, AABBAdjacentNoOverlap) {
 class TankCollisionTest : public ::testing::Test {
 protected:
     // Tank dimensions from Constants
-    static constexpr float TANK_WIDTH = 32.0f;   // ELEMENT_SIZE - 2
-    static constexpr float TANK_HEIGHT = 32.0f;
+    static constexpr float TANK_WIDTH = 30.0f;   // ELEMENT_SIZE - 2 * margin
+    static constexpr float TANK_HEIGHT = 30.0f;
     static constexpr float ELEMENT_SIZE = 34.0f;
 };
 
 TEST_F(TankCollisionTest, TankBoundsSmallerThanSprite) {
-    // Tank uses width/height = ELEMENT_SIZE - 2 = 32
+    // Tank uses width/height = ELEMENT_SIZE - 4 = 30
     // But sprite is 34x34
     // This is intentional for better gameplay feel
 
     EXPECT_LT(TANK_WIDTH, ELEMENT_SIZE);
-    EXPECT_EQ(TANK_WIDTH, 32.0f);
+    EXPECT_EQ(TANK_WIDTH, 30.0f);
 }
 
 // Bullet collision tests
@@ -109,8 +109,8 @@ protected:
 };
 
 TEST_F(SmoothMovementTest, SlideAmountCalculation) {
-    // Tank width is 32, slideAmount = width / 3 = 10
-    float tankWidth = 32.0f;
+    // Tank width is 30, slideAmount = width / 3 = 10
+    float tankWidth = 30.0f;
     int slideAmount = static_cast<int>(tankWidth / 3);
 
     EXPECT_EQ(slideAmount, 10);

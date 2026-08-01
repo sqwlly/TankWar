@@ -7,9 +7,21 @@
 #undef private
 #undef protected
 
+#include "mocks/ScriptedInput.hpp"
 #include "states/GameStateManager.hpp"
 
 namespace tank::test {
+namespace {
+
+void pressKeyOnce(GameStateManager& manager, ScriptedInput& input, SDL_Scancode scancode) {
+    input.setKeyDown(scancode, true);
+    manager.handleInput(input);
+    input.advanceFrame();
+    input.setKeyDown(scancode, false);
+    input.advanceFrame();
+}
+
+} // namespace
 
 TEST(PlayingStateWaveGeneratorVictoryTest, WaveGeneratorEnabled_VictoryTransitionsToNextLevelPlaying) {
     GameStateManager manager;
@@ -35,7 +47,16 @@ TEST(PlayingStateWaveGeneratorVictoryTest, WaveGeneratorEnabled_VictoryTransitio
     playing->levelComplete_ = false;
 
     manager.update(0.016f);
-    manager.update(0.0f);  // Apply pending change -> StageState
+    manager.update(0.0f);  // Apply pending change -> ScoreState
+
+    ASSERT_NE(manager.getCurrentState(), nullptr);
+    ASSERT_EQ(manager.getCurrentState()->getType(), StateType::Score);
+
+    // Skip tally animation, then continue -> StageState for the next level.
+    ScriptedInput input;
+    pressKeyOnce(manager, input, SDL_SCANCODE_RETURN);
+    pressKeyOnce(manager, input, SDL_SCANCODE_RETURN);
+    manager.update(0.0f);
 
     ASSERT_NE(manager.getCurrentState(), nullptr);
     EXPECT_EQ(manager.getCurrentState()->getType(), StateType::Stage);

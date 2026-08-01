@@ -23,9 +23,10 @@ public:
         std::vector<EnemySpawnInfo> enemies;
     };
 
-    static std::vector<Wave> generateThreeWaves(int levelNumber);
-    static void applyToLevel(Level& level, int levelNumber);
+    static std::vector<Wave> generateThreeWaves(
+        int levelNumber, GameDifficulty difficulty = GameDifficulty::Normal);
+    static void applyToLevel(Level& level, int levelNumber,
+                             GameDifficulty difficulty = GameDifficulty::Normal);
 };
 
 } // namespace tank
-

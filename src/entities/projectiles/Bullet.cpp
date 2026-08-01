@@ -48,19 +48,23 @@ void Bullet::onUpdate(float deltaTime) {
 void Bullet::onRender(IRenderer& renderer) {
     if (!isAlive()) return;
 
-    // Use the new SpriteSheet API with correct coordinates
-    Rectangle bulletSrc = Sprites::Bullet::get(direction_);
+    // Classic bullet: a white rectangle elongated along the travel direction.
+    // Drawn procedurally - the sprite sheet has no directional bullet sprites.
+    int x = static_cast<int>(position_.x);
+    int y = static_cast<int>(position_.y);
+    int w = static_cast<int>(width_);
+    int h = static_cast<int>(height_);
 
-    int destX = static_cast<int>(position_.x);
-    int destY = static_cast<int>(position_.y);
-    int destW = static_cast<int>(width_);
-    int destH = static_cast<int>(height_);
+    int bodyW = w;
+    int bodyH = h;
+    if (direction_ == Direction::Up || direction_ == Direction::Down) {
+        bodyW = w / 2;  // Vertical: narrow and tall
+    } else {
+        bodyH = h / 2;  // Horizontal: wide and short
+    }
 
-    renderer.drawSprite(
-        static_cast<int>(bulletSrc.x), static_cast<int>(bulletSrc.y),
-        static_cast<int>(bulletSrc.width), static_cast<int>(bulletSrc.height),
-        destX, destY, destW, destH
-    );
+    renderer.drawRect(x + (w - bodyW) / 2, y + (h - bodyH) / 2,
+                      bodyW, bodyH, 255, 255, 255, 255);
 }
 
 void Bullet::die() {

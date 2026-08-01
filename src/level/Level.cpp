@@ -9,7 +9,7 @@ Level::Level(int levelNumber)
     , height_(Constants::GRID_HEIGHT)
     , player1Spawn_(4 * Constants::CELL_SIZE, (Constants::GRID_HEIGHT - 2) * Constants::CELL_SIZE)
     , player2Spawn_(8 * Constants::CELL_SIZE, (Constants::GRID_HEIGHT - 2) * Constants::CELL_SIZE)
-    , basePosition_(Constants::GRID_WIDTH / 2 * Constants::CELL_SIZE, (Constants::GRID_HEIGHT - 2) * Constants::CELL_SIZE)
+    , basePosition_((Constants::GRID_WIDTH / 2 - 1) * Constants::CELL_SIZE, (Constants::GRID_HEIGHT - 2) * Constants::CELL_SIZE)
 {
     initializeDefault();
 }

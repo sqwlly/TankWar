@@ -84,9 +84,8 @@ private:
     EventCallback eventCallback_;
 
     // Keyboard state
-    std::array<bool, SDL_NUM_SCANCODES> currentKeys_{};
-    std::array<bool, SDL_NUM_SCANCODES> previousKeys_{};
-    std::array<bool, SDL_NUM_SCANCODES> eventKeys_{};  // Keys pressed this frame (KeyDown edge)
+    // eventKeys_: Keys pressed this frame (KeyDown edge) for isKeyPressed()
+    std::array<bool, SDL_NUM_SCANCODES> eventKeys_{};
     std::unordered_set<SDL_Keycode> currentKeycodes_{};
     std::unordered_set<SDL_Keycode> previousKeycodes_{};
     std::unordered_set<SDL_Keycode> eventKeycodes_{};  // Keycodes pressed this frame (KeyDown edge)

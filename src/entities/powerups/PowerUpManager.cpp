@@ -31,11 +31,12 @@ void PowerUpManager::spawn(const Vector2& position, PowerUpType type) {
         static_cast<int>(position.x), static_cast<int>(position.y), type));
 }
 
-bool PowerUpManager::tryCollect(PlayerTank& player) {
+std::optional<PowerUpType> PowerUpManager::tryCollect(PlayerTank& player) {
     if (!player.isAlive() || player.isSpawning()) {
-        return false;
+        return std::nullopt;
     }
 
+    std::optional<PowerUpType> collected;
     const Rectangle playerBounds = player.getBounds();
     for (auto& powerUp : powerUps_) {
         if (!powerUp->isActive() || powerUp->isExpired()) {
@@ -46,15 +47,14 @@ bool PowerUpManager::tryCollect(PlayerTank& player) {
             continue;
         }
 
-        const PowerUpType type = powerUp->getType();
+        collected = powerUp->getType();
         powerUp->collect();
-        applyToPlayer(player, type);
-        removeInactive();
-        return true;
+        break;
     }
 
+    // Container mutation stays outside the iteration above.
     removeInactive();
-    return false;
+    return collected;
 }
 
 void PowerUpManager::removeInactive() {
@@ -65,15 +65,4 @@ void PowerUpManager::removeInactive() {
     );
 }
 
-bool PowerUpManager::applyToPlayer(PlayerTank& player, PowerUpType type) {
-    switch (type) {
-        case PowerUpType::Star:
-            player.upgrade();
-            return true;
-        default:
-            return false;
-    }
-}
-
 } // namespace tank
-

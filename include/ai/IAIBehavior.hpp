@@ -19,7 +19,9 @@ public:
 
     enum class Type {
         Simple,
-        Pathfinding
+        Pathfinding,
+        Ranged,
+        Direct
     };
 
     virtual Type getType() const = 0;

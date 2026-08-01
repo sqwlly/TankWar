@@ -6,6 +6,18 @@
 #include <algorithm>
 
 namespace tank {
+namespace {
+
+Direction directionTowards(const Vector2& from, const Vector2& target) {
+    const float dx = target.x - from.x;
+    const float dy = target.y - from.y;
+    if (std::abs(dx) > std::abs(dy)) {
+        return dx >= 0.0f ? Direction::Right : Direction::Left;
+    }
+    return dy >= 0.0f ? Direction::Down : Direction::Up;
+}
+
+} // namespace
 
 // SimpleAI implementation
 SimpleAI::SimpleAI()
@@ -209,6 +221,41 @@ Direction PathfindingAI::getDirectionToNext(const EnemyTank& enemy) const {
         return (diffX > 0) ? Direction::Right : Direction::Left;
     } else {
         return (diffY > 0) ? Direction::Down : Direction::Up;
+    }
+}
+
+void RangedAI::update(EnemyTank& enemy, float deltaTime) {
+    fireTimer_ += deltaTime;
+
+    const Vector2 position = enemy.getPosition();
+    const float dx = targetPos_.x - position.x;
+    const float dy = targetPos_.y - position.y;
+    const float distance = std::max(std::abs(dx), std::abs(dy));
+    const Direction towardTarget = directionTowards(position, targetPos_);
+
+    if (distance > MAX_RANGE) {
+        enemy.move(towardTarget);
+    } else if (distance < MIN_RANGE) {
+        enemy.move(oppositeDirection(towardTarget));
+    } else {
+        // Keep the tank stationary inside the firing band, but always face
+        // the base so a shot is meaningful.
+        enemy.setDirection(towardTarget);
+    }
+
+    if (fireTimer_ >= FIRE_INTERVAL) {
+        fireTimer_ = 0.0f;
+        enemy.shoot();
+    }
+}
+
+void DirectAI::update(EnemyTank& enemy, float deltaTime) {
+    fireTimer_ += deltaTime;
+    enemy.move(directionTowards(enemy.getPosition(), targetPos_));
+
+    if (fireTimer_ >= FIRE_INTERVAL) {
+        fireTimer_ = 0.0f;
+        enemy.shoot();
     }
 }
 

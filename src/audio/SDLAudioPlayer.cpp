@@ -91,17 +91,22 @@ std::string SDLAudioPlayer::getSoundPath(SoundId id) const {
     std::string basePath = "assets/audio/";
 
     switch (id) {
-        case SoundId::BulletShot:     return basePath + "bullet_shot.wav";
+        case SoundId::BulletShot:     return basePath + "sfx/tank_shoot.wav";
         case SoundId::BulletHitSteel: return basePath + "bullet_hit_steel.wav";
-        case SoundId::Explosion:      return basePath + "explosion_2.wav";
+        case SoundId::Explosion:      return basePath + "sfx/tank_explosion.wav";
         case SoundId::PlayerMove:     return basePath + "player.move.wav";
         case SoundId::EnemyMove:      return basePath + "enemy.move.wav";
-        case SoundId::GetBonus:       return basePath + "getBonus.wav";
+        case SoundId::GetBonus:       return basePath + "sfx/powerup_collect.wav";
         case SoundId::BonusLife:      return basePath + "bonus.life.wav";
         case SoundId::Star:           return basePath + "star.wav";
         case SoundId::GameOver:       return basePath + "game_over.wav";
         case SoundId::StageStart:     return basePath + "stage_start.wav";
         case SoundId::Pause:          return basePath + "menu.wav";
+        case SoundId::BrickBreak:     return basePath + "sfx/brick_break.wav";
+        case SoundId::PlayerDamage:   return basePath + "sfx/player_damage.wav";
+        case SoundId::TankHit:        return basePath + "sfx/tank_hit.wav";
+        case SoundId::MenuMove:       return basePath + "sfx/menu_move.wav";
+        case SoundId::MenuConfirm:    return basePath + "sfx/menu_confirm.wav";
     }
     return basePath + "bullet_shot.wav";
 }
